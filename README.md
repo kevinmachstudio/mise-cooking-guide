@@ -1,6 +1,6 @@
 # Mise
 
-A static field guide for home cooking. Browse pantry staples, scale a sauce, plan five high-protein Asian lunches, or explore meat cuts.
+A static field guide for home cooking. Browse restaurant-inspired recipes, look up pantry staples, scale a sauce, plan five high-protein Asian lunches, or explore meat cuts.
 
 ## Run locally
 
@@ -17,5 +17,7 @@ GitHub Pages uses the checked-in Actions workflow and serves `dist/`. In the rep
 ## Recipe and image sources
 
 Every recipe links to its published source. The site's portions, ingredient combinations, and estimated macros are adaptations; the adaptations have not been independently kitchen-tested. The generated images illustrate the dishes.
+
+The restaurant collection links to menus, restaurant reporting, and 2026 dining guides. The recipes are written for home kitchens. The built-in image generator created cookbook-style illustrations of the adaptations, including the Bay Area soups, four dim sum dishes, and the regional restaurant picks in `dist/assets/`.
 
 The built-in image generator produced an overhead editorial photo of soy-glazed chicken, rice, edamame, and purple cabbage on a dark table, plus a nine-photo grid of the other lunch dishes. The individual WebP images are in `dist/assets/`.

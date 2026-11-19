@@ -1,5 +1,6 @@
 import { pantry, sauces, recipes, ingredients, days, macros } from "./food.js";
 import { meats } from "./cuts.js";
+import { restaurants, restaurantRecipes } from "./restaurants.js";
 
 const shapes = {
   mark:'<path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
@@ -35,6 +36,7 @@ const read = (key, fallback) => {
 };
 const write = (key, value) => { try { localStorage.setItem("mise-" + key, JSON.stringify(value)); } catch {} };
 const byId = (items, id) => items.find(item => item.id === id);
+const allRecipes = [...recipes, ...restaurantRecipes];
 const asCount = (value, max = 12) => Math.max(1, Math.min(max, Math.floor(Number(value) || 1)));
 const notice = text => {
   const toast = document.querySelector("#toast");
@@ -56,10 +58,11 @@ let sauceFilter = "All";
 let recipePortions = 1;
 
 const recipeRoute = recipe => "#recipe/" + recipe.id;
-const dishPhoto = (recipe, lazy = true) => '<img src="assets/' + recipe.image + '.webp" alt="' + recipe.name + '"' + (lazy ? ' loading="lazy"' : '') + '>';
+const dishPhoto = (recipe, lazy = true, alt = recipe.name) => '<img src="assets/' + (recipe.image ?? recipe.id) + '.webp" alt="' + alt + '"' + (lazy ? ' loading="lazy"' : '') + '>';
 const dayOptions = index => recipes.filter(recipe => recipe.day === index);
 const weekRecipes = () => days.map((_, index) => dayOptions(index).find(recipe => recipe.id === selected[index]) ?? dayOptions(index)[0]);
 const typeLinks = [
+  ["restaurants","bowl","Restaurant recipes","Bay Area favorites, dim sum, and more.","fern"],
   ["pantry","jar","Pantry staples","The ingredients that build a cuisine.","sage"],
   ["sauces","whisk","Sauce calculator","Easy sauces, scaled to your table.","peach"],
   ["lunches","bowl","5-day lunch plan","Ten high-protein recipes to mix and match.","gold"],
@@ -70,7 +73,7 @@ const sectionIntro = (label, title, description, img) => '<section class="page-h
 
 function home() {
   return '<section class="wrap explore"><div class="section-head"><div><div class="eyebrow"><i></i> THE CHEAT SHEETS</div><h2>What are we cooking?</h2></div><p>Pick a guide and get straight to the good part.</p></div><div class="tiles">' +
-    typeLinks.map(([id,img,title,desc,color]) => '<a class="tile ' + color + '" href="#' + id + '"><div class="tile-top"><span class="tile-icon">' + icon(img,26) + '</span><span class="tile-arrow">' + icon("arrow-up",19) + '</span></div><h3>' + title + '</h3><p>' + desc + '</p></a>').join("") +
+    typeLinks.map(([id,img,title,desc,color]) => '<a class="tile ' + color + '" href="#' + id + '"><div class="tile-top"><span class="tile-icon">' + icon(img,26) + '</span>' + (id === "restaurants" ? '' : '<span class="tile-arrow">' + icon("arrow-up",19) + '</span>') + '</div><h3>' + title + '</h3><p>' + desc + '</p></a>').join("") +
     '</div></section><section class="wrap home-plan"><div class="feature-images">' + [recipes[2], recipes[4], recipes[8]].map(r => '<a href="' + recipeRoute(r) + '">' + dishPhoto(r) + '</a>').join("") +
     '</div><div class="feature-copy"><div class="eyebrow"><i></i> THE LUNCH PLAN</div><h2>5 Days of High-Protein Asian Lunches</h2><p>Choose one of two lunches for each day, then get a grocery list and a prep schedule for the week.</p><a class="button dark" href="#lunches">Build your lunch plan ' + icon("arrow") + '</a></div></section>';
 }
@@ -96,12 +99,21 @@ function numberLabel(n) {
   return fraction ? (whole || "") + fraction : n.toLocaleString("en-US", {maximumFractionDigits:2});
 }
 function measure(amount, unit) {
+  if (!unit) return numberLabel(amount);
+  if (unit === "kg" && amount < 1) return measure(amount * 1000,"g");
+  if (unit === "L" && amount < 1) return measure(amount * 1000,"mL");
+  if (unit === "tbsp" && amount < 1) return measure(amount * 3,"tsp");
+  if (unit === "cup" || unit === "cups") {
+    if (amount < .25) return measure(amount * 48,"tsp");
+    unit = amount > 1 ? "cups" : "cup";
+  }
   if (unit === "tsp" && amount >= 3) {
     const tbsp = Math.floor(amount / 3);
     const remain = amount % 3;
     return numberLabel(tbsp) + " tbsp" + (remain ? " + " + numberLabel(remain) + " tsp" : "");
   }
-  const plural = ["egg","clove","chile"].includes(unit) && amount > 1;
+  if (unit === "cloves" || unit === "stalks") unit = unit.slice(0,-1);
+  const plural = ["egg","clove","chile","stalk"].includes(unit) && amount > 1;
   return numberLabel(amount) + " " + unit + (plural ? "s" : "");
 }
 
@@ -130,6 +142,26 @@ function weekCards() {
 }
 function recipeLibrary() {
   return '<div class="library-grid">' + recipes.map(r => '<a class="library-card" href="' + recipeRoute(r) + '">' + dishPhoto(r) + '<div><div class="mini">' + r.cuisine + '</div><h2>' + r.name + '</h2><p>' + macros(r)[0] + ' g protein · ' + r.time + ' min</p></div></a>').join("") + '</div>';
+}
+
+function duration(minutes) {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return [hours && hours + " hr", rest && rest + " min"].filter(Boolean).join(" ");
+}
+
+function restaurantPage(filter) {
+  const filters = [["all","All recipes"],["bay","Bay Area"],["dim-sum","Dim sum"],["us","Elsewhere in the U.S."],["asia","Across Asia"]];
+  const active = filters.some(([id]) => id === filter) ? filter : "all";
+  const visible = restaurantRecipes.filter(r => active === "all" || restaurants[r.restaurant].area === active || (active === "dim-sum" && r.dimSum));
+  return sectionIntro("Recipes", "Restaurant recipes", "Cook your way through Bay Area favorites, a dim sum brunch, and standout dishes from 2026 restaurant lists.", "bowl") +
+    '<section class="wrap page-body"><div class="restaurant-controls"><div class="pills" aria-label="Filter restaurant recipes">' +
+    filters.map(([id,label]) => '<a href="#restaurants' + (id === "all" ? "" : "/" + id) + '" ' + (active === id ? 'aria-current="page"' : '') + '>' + label + '</a>').join("") +
+    '</div><p>' + visible.length + (visible.length === 1 ? ' recipe' : ' recipes') + '</p></div><div class="library-grid restaurant-grid">' +
+    visible.map(r => {
+      const place = restaurants[r.restaurant];
+      return '<a class="library-card restaurant-card" href="' + recipeRoute(r) + '">' + dishPhoto(r,true,"") + '<div><div class="restaurant-origin">' + place.name + ' <span>· ' + place.place + '</span></div><h2>' + r.name + '</h2><p>' + r.desc + '</p><div class="restaurant-meta">' + chip(duration(r.time),"clock") + chip(r.cuisine) + '</div></div></a>';
+    }).join("") + '</div></section>';
 }
 function groceryList() {
   const totals = new Map();
@@ -226,20 +258,43 @@ function drawMeat(animal, active) {
   });
 }
 
-function showRecipe(r) {
+function nutrition(r) {
   const [protein,carbs,fat,kcal] = macros(r);
-  recipeDialog.innerHTML = '<div class="recipe-cover">' + dishPhoto(r,false) + '<button class="icon-button" type="button" data-close aria-label="Close recipe">' + icon("x") + '</button></div><div class="recipe-content"><div class="eyebrow"><i></i> ' + r.cuisine.toUpperCase() + '</div><h2 id="recipe-title">' + r.name + '</h2><p>' + r.desc + '</p><div class="recipe-meta">' + chip(r.time + " min","clock") + chip(r.animal,"bowl") + '</div><div class="macro-grid" aria-label="Estimated macros per serving">' +
+  return '<div class="macro-grid" aria-label="Estimated macros per serving">' +
     [[kcal,"Calories"],[protein + " g","Protein"],[carbs + " g","Carbs"],[fat + " g","Fat"]].map(([value,label]) => '<div><strong>' + value + '</strong><span>' + label + '</span></div>').join("") +
-    '</div><p class="reference">Estimates per serving from typical ingredient values. Brands and substitutions vary. <a href="https://fdc.nal.usda.gov/">USDA FoodData Central</a></p><div class="recipe-columns"><section><div class="recipe-ingredients"><h3>Ingredients</h3><div class="count-control"><span>Servings</span>' + counter("recipe",recipePortions,8,"servings") + '</div></div><ul class="measure-list">' +
-    r.items.map(([id,num]) => '<li><span>' + ingredients[id][0] + '</span><strong>' + measure(num * recipePortions,ingredients[id][1]) + '</strong></li>').join("") +
-    '</ul></section><section><h3>Method</h3><ol class="steps">' + r.steps.map(step => '<li>' + step + '</li>').join("") + '</ol><p class="reference">For larger batches, sear in batches to avoid crowding the pan.</p></section></div><div class="recipe-notes"><div class="sage"><h3>Substitutions</h3><p>' + r.swap + '</p></div><div class="gold"><h3>Storage & reheating</h3><p>' + r.store +
-    '</p><p>Chill within 2 hours, use within 3–4 days or freeze, and reheat cooked leftovers to 165°F / 74°C.</p></div></div><div class="related source-note"><p>The bowl and its macros are Mise adaptations. See the original recipe for the published preparation.</p><a class="text-link" href="' + r.source[2] + '">' + r.source[1] + ' · ' + r.source[0] + ' ' + icon("arrow-up",15) + '</a>' +
-    (r.sauce ? '<a class="text-link" href="#sauces/' + r.sauce + '">Related sauce calculator ' + icon("arrow",15) + '</a>' : '') + '</div></div>';
+    '</div><p class="reference">Estimates per serving from typical ingredient values. Brands and substitutions vary. <a href="https://fdc.nal.usda.gov/">USDA FoodData Central</a></p>';
+}
+
+function recipeIngredients(r) {
+  if (r.restaurant) return r.items;
+  return r.items.map(([id,amount]) => [amount,ingredients[id][1],ingredients[id][0]]);
+}
+
+function recipeSource(r) {
+  if (!r.restaurant) {
+    return '<div class="related source-note"><p>The bowl and its macros are Mise adaptations. See the original recipe for the published preparation.</p><a class="text-link" href="' + r.source[2] + '">' + r.source[1] + ' · ' + r.source[0] + ' ' + icon("arrow-up",15) + '</a></div>';
+  }
+  return '<div class="recipe-inspiration"><h3>Restaurant inspiration</h3><p>' + r.inspiration + ' This is a Mise home-kitchen adaptation.</p><div class="recipe-source-links">' +
+    restaurants[r.restaurant].sources.map(([label,url]) => '<a href="' + url + '">' + label + '</a>').join("") + '</div></div>';
+}
+
+function showRecipe(r) {
+  const place = restaurants[r.restaurant];
+  const scale = recipePortions / (r.servings ?? 1);
+  const byline = place ? place.name + " · " + place.place : r.cuisine;
+  const yieldNote = r.pieces ? '<p class="reference recipe-yield">Makes about ' + Math.round(r.pieces * scale) + ' pieces</p>' : '';
+  recipeDialog.innerHTML = '<div class="recipe-cover">' + dishPhoto(r,false) + '<button class="icon-button" type="button" data-close aria-label="Close recipe">' + icon("x") + '</button></div><div class="recipe-content"><div class="eyebrow"><i></i> ' + byline.toUpperCase() + '</div><h2 id="recipe-title">' + r.name + '</h2><p>' + r.desc + '</p><div class="recipe-meta">' + chip(duration(r.time) + (r.active ? " total" : ""),"clock") + (r.active ? chip(duration(r.active) + " hands-on") : "") + chip(r.animal,"bowl") + '</div>' + (place ? '' : nutrition(r)) +
+    '<div class="recipe-columns"><section><div class="recipe-ingredients"><h3>Ingredients</h3><div class="count-control"><span>Servings</span>' + counter("recipe",recipePortions,8,"servings") + '</div></div>' + yieldNote + '<ul class="measure-list">' +
+    recipeIngredients(r).map(([amount,unit,label]) => '<li><span>' + label + '</span><strong>' + measure(amount * scale,unit) + '</strong></li>').join("") +
+    '</ul></section><section><h3>Method</h3><ol class="steps">' + r.steps.map(step => '<li>' + step + '</li>').join("") + '</ol>' + (place ? '' : '<p class="reference">For larger batches, sear in batches to avoid crowding the pan.</p>') + '</section></div><div class="recipe-notes"><div class="sage"><h3>Substitutions</h3><p>' + r.swap + '</p></div><div class="gold"><h3>Storage & reheating</h3><p>' + r.store +
+    '</p><p>Chill within 2 hours, use within 3–4 days or freeze, and reheat cooked leftovers to 165°F / 74°C.</p></div></div>' + recipeSource(r) +
+    (r.sauce ? '<a class="text-link recipe-sauce" href="#sauces/' + r.sauce + '">Related sauce calculator</a>' : '') + '</div>';
   if (!recipeDialog.open) recipeDialog.showModal();
 }
 
 const entries = [
   ...recipes.map(r => ({title:r.name, kind:"Recipe", link:recipeRoute(r), desc:r.cuisine + " · " + r.time + " min · " + macros(r)[0] + " g protein", terms:r.items.map(([id]) => ingredients[id][0]).join(" ")})),
+  ...restaurantRecipes.map(r => ({title:r.name, kind:"Recipe", link:recipeRoute(r), desc:restaurants[r.restaurant].name + " · " + restaurants[r.restaurant].place + " · " + duration(r.time), terms:[r.inspiration,r.cuisine,r.animal,r.dimSum ? "dim sum yum cha" : "",...recipeIngredients(r).map(([, ,label]) => label)].join(" ")})),
   ...sauces.map(s => ({title:s.name, kind:"Sauce", link:"#sauces/" + s.id, desc:s.cuisine + " · " + s.time + " min", terms:s.items.map(([name]) => name).join(" ") + " " + s.use})),
   ...pantry.flatMap(p => p.staples.map(([name, desc],i) => ({title:name, kind:"Pantry", link:"#pantry/" + p.id + "/" + i, desc:p.name + " pantry · " + desc, terms:p.name}))),
   ...meats.flatMap(m => m.cuts.map(c => ({title:c[1], kind:"Meat cut", link:cutRoute(m,c), desc:m.name + " · " + c[2], terms:c.slice(3,5).join(" ")})))
@@ -253,7 +308,7 @@ function search() {
     const searchable = normalize([item.title,item.kind,item.desc,item.terms].join(" "));
     const score = tokens.every(token => searchable.includes(token)) ? (title === query ? 9 : title.startsWith(query) ? 6 : title.includes(query) ? 3 : 1) : 0;
     return {item,score};
-  }).filter(result => result.score).sort((a,b) => b.score-a.score).map(result => result.item) : [entries[0],entries[10],entries.find(e => e.title === "Flank steak")];
+  }).filter(result => result.score).sort((a,b) => b.score-a.score).map(result => result.item) : ["Seolleongtang","Pork & Shrimp Siu Mai","Teriyaki glaze","Flank steak"].map(title => entries.find(e => e.title === title));
   searchStatus.textContent = query ? results.length + (results.length === 1 ? " result" : " results") + (results.length > 24 ? " · showing first 24" : "") : "Popular in the guide";
   searchResults.innerHTML = results.length ? results.slice(0,24).map(r => '<a href="' + r.link + '" class="search-result"><span class="result-kind">' + r.kind + '</span><span><strong>' + r.title + '</strong><small>' + r.desc + '</small></span>' + icon("arrow-up",16) + '</a>').join("") :
     '<p class="empty">No matches. Try a shorter ingredient or a cut name.</p>';
@@ -282,18 +337,18 @@ searchResults.addEventListener("click", event => {
 
 function renderRoute(reset = false, requestedFocus = "") {
   const [section, id, sub] = location.hash.slice(1).split("/");
-  const route = ["pantry","sauces","lunches","meat"].includes(section) ? section : "home";
+  const route = ["restaurants","pantry","sauces","lunches","meat"].includes(section) ? section : "home";
   if (section === "recipe") {
-    const r = byId(recipes,id);
+    const r = byId(allRecipes,id);
     if (r) {
       if (!currentRoute) {
-        history.replaceState(null,"","#lunches");
+        history.replaceState(null,"",r.restaurant ? "#restaurants" : "#lunches");
         renderRoute(true);
         history.replaceState(null,"",recipeRoute(r));
       }
       if (recipeToOpen !== r) {
         returnRoute = currentRoute;
-        recipePortions = currentRoute.startsWith("lunches") ? portions : 1;
+        recipePortions = r.servings ?? (currentRoute.startsWith("lunches") ? portions : 1);
         recipeToOpen = r;
       }
       showRecipe(r);
@@ -301,17 +356,21 @@ function renderRoute(reset = false, requestedFocus = "") {
       return;
     }
   }
+  const closedRecipe = recipeToOpen;
   recipeToOpen = null;
   if (recipeDialog.open) recipeDialog.close();
   const hash = section === route ? location.hash.slice(1) : route;
   const viewChanged = currentRoute.split("/")[0] !== route;
+  const restoringRecipe = closedRecipe && currentRoute === hash;
   currentRoute = hash;
   hero.hidden = route !== "home";
   let markup = "";
   let animal;
   let active;
   let target;
-  if (route === "pantry") {
+  if (route === "restaurants") {
+    markup = restaurantPage(id);
+  } else if (route === "pantry") {
     const item = byId(pantry,id);
     if (item) {
       cuisine = item.id;
@@ -340,8 +399,9 @@ function renderRoute(reset = false, requestedFocus = "") {
     if (link.hash === "#" + route) link.setAttribute("aria-current","page");
     else link.removeAttribute("aria-current");
   });
-  document.title = ({"home":"Mise — The home cook’s field guide","pantry":"Pantry staples — Mise","sauces":"Sauce calculator — Mise","lunches":"5 Days of High-Protein Asian Lunches — Mise","meat":"Meat & cuts — Mise"})[route];
+  document.title = ({"home":"Mise — The home cook’s field guide","restaurants":"Restaurant recipes — Mise","pantry":"Pantry staples — Mise","sauces":"Sauce calculator — Mise","lunches":"5 Days of High-Protein Asian Lunches — Mise","meat":"Meat & cuts — Mise"})[route];
   if (requestedFocus) view.querySelector(requestedFocus)?.focus({preventScroll:true});
+  if (restoringRecipe) document.querySelector('main a[href="' + recipeRoute(closedRecipe) + '"]')?.focus({preventScroll:true});
   if (reset && target) {
     const el = view.querySelector(target);
     el?.classList.add("target");
