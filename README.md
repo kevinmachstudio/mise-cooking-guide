@@ -12,6 +12,8 @@ Open [localhost:8787](http://localhost:8787). The site needs no build step. The 
 
 Weekday calendar slots use the lunch plan until edited. Weekly templates preview and apply a full week of meals with daily estimated protein and calories. The sauce calculator filters by style and use, and the seafood directory links to five recipes or transferable methods per fish.
 
+The Nutrition & Longevity guide links to primary studies and public-health guidance. Its hero uses a generated editorial photo of a Japanese-inspired lunch with tofu, greens, sweet potato, and noodles.
+
 ## Deploy
 
 GitHub Pages uses the checked-in Actions workflow and serves `dist/`. In the repository’s Pages settings, choose **GitHub Actions** as the source. Netlify reads `netlify.toml` and publishes the same directory. The production site can be updated with `netlify deploy --prod` once linked.

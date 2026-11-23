@@ -6,6 +6,7 @@ import { plannerPage, mountPlanner } from "./planner.js";
 import { normalizeText, matchesText } from "./ingredient-match.js";
 import { templateRecipes, estimatedNutrition } from "./meal-templates.js";
 import { fish, fishGroups } from "./fish.js";
+import { nutritionPage, nutritionSections } from "./nutrition-guide.js";
 
 const shapes = {
   mark:'<path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
@@ -369,6 +370,7 @@ function showRecipe(r) {
 }
 
 const entries = [
+  ...nutritionSections.map(item=>({title:item.label,kind:"Guide",link:"#nutrition" + (item.id === "basics" ? "" : "/" + item.id),desc:item.description,terms:item.terms})),
   {title:"This Week", kind:"Planner", link:"#plan", desc:"Weekly meal calendar", terms:"schedule breakfast lunch dinner recipe ingredient match what can i cook"},
   ...recipes.map(r => ({title:r.name, kind:"Recipe", link:recipeRoute(r), desc:r.cuisine + " · " + r.time + " min · " + macros(r)[0] + " g protein", terms:r.items.map(([id]) => ingredients[id][0]).join(" ")})),
   ...templateRecipes.map(r => ({title:r.name,kind:"Recipe",link:recipeRoute(r),desc:"Weekly templates · " + Math.round(r.nutrition[0]) + " g protein",terms:[r.cuisine,r.animal,...r.items.map(([, ,label])=>label)].join(" ")})),
@@ -416,7 +418,7 @@ searchResults.addEventListener("click", event => {
 
 function renderRoute(reset = false, requestedFocus = "") {
   const [section, id, sub] = location.hash.slice(1).split("/");
-  const route = ["plan","home","restaurants","pantry","sauces","lunches","meat"].includes(section) ? section : "plan";
+  const route = ["plan","home","restaurants","pantry","sauces","lunches","meat","nutrition"].includes(section) ? section : "plan";
   if (section === "recipe") {
     const r = byId(allRecipes,id);
     if (r) {
@@ -454,6 +456,8 @@ function renderRoute(reset = false, requestedFocus = "") {
   let target;
   if (route === "plan") {
     markup = plannerPage(icon);
+  } else if (route === "nutrition") {
+    markup = nutritionPage(id);
   } else if (route === "restaurants") {
     markup = restaurantPage(id,sub);
   } else if (route === "pantry") {
@@ -489,13 +493,14 @@ function renderRoute(reset = false, requestedFocus = "") {
   if (route === "plan") mountPlanner(view.querySelector("#planner-page"), allRecipes, {icon, read, write, notice, recipeIngredients, recipeRoute, dishPhoto, duration, recipeContext, weekRecipes, numberLabel});
   if (route === "sauces") view.querySelector("#sauce-search").value = sauceQuery;
   if (animal) drawMeat(animal,active);
-  document.querySelectorAll("nav a").forEach(link => {
+  document.querySelectorAll(".bar nav a").forEach(link => {
     if (link.hash === "#" + route) link.setAttribute("aria-current","page");
     else link.removeAttribute("aria-current");
   });
-  document.title = ({"plan":"This Week — Mise","home":"Mise — The home cook’s field guide","restaurants":"Recipe library — Mise","pantry":"Pantry staples — Mise","sauces":"Sauce calculator — Mise","lunches":"5 Days of High-Protein Asian Lunches — Mise","meat":"Meat & cuts — Mise"})[route];
+  document.title = ({"plan":"This Week — Mise","home":"Mise — The home cook’s field guide","restaurants":"Recipe library — Mise","pantry":"Pantry staples — Mise","sauces":"Sauce calculator — Mise","lunches":"5 Days of High-Protein Asian Lunches — Mise","meat":"Meat & cuts — Mise","nutrition":"Nutrition & longevity — Mise"})[route];
   if (requestedFocus) view.querySelector(requestedFocus)?.focus({preventScroll:true});
   if (restoringRecipe) document.querySelector('main a[href="' + recipeRoute(closedRecipe) + '"]')?.focus({preventScroll:true});
+  if (route === "nutrition" && !viewChanged && !restoringRecipe) view.querySelector('.health-nav a[aria-current="page"]')?.focus({preventScroll:true});
   if (reset && target) {
     const el = view.querySelector(target);
     el?.classList.add("target");
