@@ -524,3 +524,56 @@ dialog::backdrop { background:#171e18a8; backdrop-filter:blur(4px); }
   .bar nav { gap:1px; }
   .pantry-result-grid { grid-template-columns:1fr; }
 }
+
+.sauce-controls { padding:13px; margin-bottom:13px; background:#f3f1e7; border:1px solid var(--line); border-radius:10px; }
+.sauce-controls .control-bar { margin-bottom:11px; }
+.sauce-controls .pills + .pills { margin-top:8px; }
+.sauce-search { flex:1 1 240px; max-width:490px; }
+.sauce-count { font-size:14px; color:var(--muted); margin-bottom:10px; }
+.sauce-section + .sauce-section { margin-top:24px; padding-top:17px; border-top:1px solid var(--line); }
+.sauce-section>h2,.fish-intro h2 { font:400 clamp(36px,4vw,54px)/.95 var(--serif); letter-spacing:-.018em; margin-bottom:10px; }
+.sauce-section>p { color:var(--muted); font-size:14px; margin:-2px 0 12px; }
+.sauce-section>p a,.calendar-note a { text-decoration:underline; color:#46563c; }
+.sauce-head h2 { font-size:clamp(26px,3vw,33px); }
+.calendar-nav { flex-wrap:wrap; }
+.calendar-day { grid-template-rows:auto repeat(3,1fr) auto; }
+.planned-portion { color:var(--muted); font-size:11px; line-height:1.2; }
+.day-nutrition { display:grid; align-content:start; min-height:46px; margin:0 6px; padding:5px 2px; border-top:1px solid var(--line); color:#4d5d43; font-size:11px; line-height:1.2; }
+.day-nutrition strong { font-size:12px; }
+.day-nutrition small { margin-top:2px; font-size:10px; color:var(--muted); }
+.picker-portion { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:8px 0; font-size:14px; }
+.picker-portion label { display:flex; align-items:center; gap:6px; }
+.picker-portion select,.template-select select,.fish-controls select { padding:6px 8px; background:var(--white); border:1px solid #c9cebb; border-radius:7px; }
+.picker-portion .button { padding:5px 8px; }
+.draft-message { padding:8px; margin-bottom:9px; border-radius:7px; background:#f2e1d1; font-size:14px; color:#683e2b; }
+.template-select { display:grid; gap:4px; font-size:14px; font-weight:700; }
+.template-days { max-height:43dvh; overflow:auto; margin:10px 0; padding:0 4px 0 0; list-style:none; }
+.template-days li { margin:0 0 4px; padding:7px 9px; border:1px solid #e3e4d3; border-radius:7px; background:#f6f7ee; }
+.template-days li div { display:flex; flex-wrap:wrap; justify-content:space-between; gap:3px 8px; }
+.template-days li span { font-size:13px; color:#455a3a; }
+.template-days li p { margin-top:2px; font-size:13px; color:var(--muted); }
+#apply-week-template .button { margin-top:8px; white-space:normal; }
+.fish-guide { margin-top:27px; padding-top:23px; border-top:1px solid var(--line); scroll-margin-top:110px; }
+.fish-intro p { color:var(--muted); margin-bottom:13px; }
+.fish-controls { display:flex; gap:11px; flex-wrap:wrap; align-items:end; }
+.fish-controls .field-search { flex:1 1 220px; max-width:460px; }
+.fish-controls>label:last-child { font-size:13px; font-weight:700; display:grid; gap:3px; }
+.fish-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:start; gap:8px; margin:9px 0; }
+.fish-card { border:1px solid #e3e1d3; border-radius:8px; background:var(--white); scroll-margin-top:115px; }
+.fish-card summary { cursor:pointer; padding:9px 11px; }
+.fish-card summary strong { font-size:15px; }
+.fish-card summary small { display:block; color:var(--muted); font-size:12px; padding-left:13px; }
+.fish-card[open] summary { border-bottom:1px solid var(--line); background:#edf1e5; border-radius:7px 7px 0 0; }
+.fish-detail { padding:11px; font-size:14px; }
+.fish-detail p { color:var(--muted); }
+.fish-detail p+p { margin-top:5px; }
+.fish-detail h3 { margin-top:9px; font-size:15px; }
+.fish-detail ul { margin:6px 0 0; padding-left:18px; }
+.fish-detail a { color:#704b38; text-decoration:underline; }
+@media (max-width:760px) {
+  .fish-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:455px) {
+  .fish-grid { grid-template-columns:1fr; }
+  .sauce-controls .control-bar { flex-wrap:wrap; }
+}

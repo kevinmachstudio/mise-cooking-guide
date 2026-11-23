@@ -1,4 +1,5 @@
 import { extraStaples, additionalPantries } from "./pantry-extra.js";
+import { extraSauces } from "./sauce-extra.js";
 
 export const pantry = [
   {id:"japanese", name:"Japanese", region:"East Asia", emblem:"🇯🇵", color:"rose", summary:"Layer savory, sweet, and tangy seasonings over rice, noodles, and broth.", staples:[
@@ -82,7 +83,8 @@ export const sauces = [
   {id:"sesame-soy", name:"Sesame–soy dressing", cuisine:"East Asian-inspired", color:"sage", time:2, desc:"An easy dressing for cucumbers, greens, and cold noodles.", ratio:"2 soy · 2 vinegar · 1 oil · 1 sugar", items:[["Soy sauce",2],["Rice vinegar",2],["Toasted sesame oil",1],["Sugar",1]], method:"Dissolve the sugar in the vinegar and soy sauce. Whisk in sesame oil and toss with vegetables just before serving.", swap:"Try tamari in place of soy sauce.", use:"Dressing", recipe:"braised-tofu"},
   {id:"peanut", name:"Creamy peanut sauce", cuisine:"Southeast Asian-inspired", color:"peach", time:4, desc:"A spoonable sauce for rice noodles and fresh rolls.", ratio:"2 peanut butter · 1 lime · 1 soy · 2 water", items:[["Smooth peanut butter",2],["Lime juice",1],["Soy sauce",1],["Warm water",2],["Honey",0.5]], method:"Mix the peanut butter, lime, soy, and honey. Whisk in warm water gradually until smooth and pourable.", swap:"Use sunflower seed butter if suitable for your diners.", use:"Dipping"},
   {id:"yogurt", name:"Lemon herb yogurt", cuisine:"Everyday", color:"sage", time:5, desc:"A cool spoon-over for grilled lamb, chicken, and roasted vegetables.", ratio:"6 yogurt · 1 lemon · 1 herbs", items:[["Plain Greek yogurt",6],["Lemon juice",1],["Chopped mint or parsley",1],["Kosher salt",0.25]], method:"Whisk everything together and season to taste. Thin with a teaspoon of water at a time for a drizzle.", swap:"Use plain unsweetened dairy-free yogurt if preferred.", use:"Dipping"},
-  {id:"lime-dressing", name:"Citrus vinaigrette", cuisine:"Everyday", color:"gold", time:3, desc:"A bright dressing for slaw, grains, and grilled vegetables.", ratio:"3 olive oil · 1 citrus", items:[["Olive oil",3],["Lime or lemon juice",1],["Honey",0.5],["Kosher salt",0.25]], method:"Whisk the citrus, honey, and salt, then stream in the oil. Taste on a leaf of whatever you’re dressing.", swap:"White wine vinegar works in place of citrus.", use:"Dressing"}
+  {id:"lime-dressing", name:"Citrus vinaigrette", cuisine:"Everyday", color:"gold", time:3, desc:"A bright dressing for slaw, grains, and grilled vegetables.", ratio:"3 olive oil · 1 citrus", items:[["Olive oil",3],["Lime or lemon juice",1],["Honey",0.5],["Kosher salt",0.25]], method:"Whisk the citrus, honey, and salt, then stream in the oil. Taste on a leaf of whatever you’re dressing.", swap:"White wine vinegar works in place of citrus.", use:"Dressing"},
+  ...extraSauces
 ];
 
 // Quantity units and approximate protein, carbs, and fat per unit.
