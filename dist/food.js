@@ -1,3 +1,5 @@
+import { extraStaples, additionalPantries } from "./pantry-extra.js";
+
 export const pantry = [
   {id:"japanese", name:"Japanese", region:"East Asia", emblem:"🇯🇵", color:"rose", summary:"Layer savory, sweet, and tangy seasonings over rice, noodles, and broth.", staples:[
     ["Japanese soy sauce","Salty, rounded seasoning for rice bowls and dipping sauces.","Tamari"],
@@ -69,7 +71,7 @@ export const pantry = [
     ["Chickpeas","Base for hummus and hearty salads.","White beans for a creamy dip"],
     ["Lemon","Acidity for salads, dips, and marinades.","Lime or white wine vinegar to taste"],
     ["Flat-leaf parsley","Fresh herbal base for tabbouleh and toppings.","Mint and cilantro for a different herbal mix"]], sauces:["yogurt","lime-dressing"]}
-];
+].map(cuisine => ({...cuisine, staples:[...cuisine.staples, ...extraStaples[cuisine.id]]})).concat(additionalPantries);
 
 export const sauces = [
   {id:"teriyaki", name:"Teriyaki glaze", cuisine:"Japanese", color:"peach", time:5, desc:"A glossy sweet-soy finish for chicken, salmon, or mushrooms.", ratio:"2 soy · 2 mirin · 2 sake · 1 sugar", items:[["Soy sauce",2],["Mirin",2],["Sake",2],["Sugar",1]], method:"Whisk and simmer in a small pan until it lightly coats a spoon, about 3–5 minutes. Brush onto cooked protein for the last minute.", swap:"Use unsalted stock in place of sake for a different flavor.", use:"Glaze", recipe:"teriyaki-chicken"},

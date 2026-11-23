@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#252c20">
-  <meta name="description" content="A home cook’s field guide to restaurant-inspired Asian recipes, pantry staples, quick sauces, meat cuts, and high-protein lunches.">
-  <title>Mise — The home cook’s field guide</title>
+  <meta name="description" content="Plan your meals for the week, find recipes for ingredients you have, and browse pantry staples, quick sauces, and meat cuts.">
+  <title>This Week — Mise</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,15 +17,15 @@
   <a href="#main" class="skip">Skip to content</a>
   <header class="top">
     <div class="wrap bar">
-      <a class="wordmark" href="#home" aria-label="Mise home"><span class="brand-symbol" data-icon="mark" aria-hidden="true"></span>mise<span>.</span></a>
+      <a class="wordmark" href="#plan" aria-label="Mise home"><span class="brand-symbol" data-icon="mark" aria-hidden="true"></span>mise<span>.</span></a>
       <nav aria-label="Main navigation">
-        <a href="#restaurants">Recipes</a><a href="#pantry">Pantry</a><a href="#sauces">Sauces</a><a href="#lunches">Lunch plan</a><a href="#meat">Meat guide</a>
+        <a href="#plan">This Week</a><a href="#restaurants">Recipes</a><a href="#pantry">Pantry</a><a href="#sauces">Sauces</a><a href="#lunches">Lunch plan</a><a href="#meat">Meat guide</a>
       </nav>
       <button class="nav-search" type="button" data-search><span data-icon="search"></span><span>Search</span><kbd>/</kbd></button>
     </div>
   </header>
   <main id="main" tabindex="-1">
-    <div class="hero" id="home">
+    <div class="hero" id="home" hidden>
       <div class="wrap hero-grid">
         <div class="hero-copy">
           <div class="eyebrow"><i></i> THE HOME COOK’S FIELD GUIDE</div>
@@ -39,7 +39,7 @@
     </div>
     <div id="view"></div>
   </main>
-  <footer class="footer"><div class="wrap footer-row"><a class="wordmark" href="#home"><span class="brand-symbol" data-icon="mark"></span>mise<span>.</span></a><span>A field guide for home cooks.</span><a href="https://www.foodsafety.gov/food-safety-charts/safe-minimum-internal-temperatures">Food safety reference <span data-icon="arrow-up"></span></a></div></footer>
+  <footer class="footer"><div class="wrap footer-row"><a class="wordmark" href="#plan"><span class="brand-symbol" data-icon="mark"></span>mise<span>.</span></a><a href="#home">Kitchen guide</a><a href="https://www.foodsafety.gov/food-safety-charts/safe-minimum-internal-temperatures">Food safety reference <span data-icon="arrow-up"></span></a></div></footer>
   <dialog id="search-dialog" aria-labelledby="search-title"><div class="dialog-head"><h2 id="search-title">Search Mise</h2><button class="icon-button" type="button" data-close aria-label="Close search"><span data-icon="x"></span></button></div><label class="search-input"><span data-icon="search"></span><input id="search-input" type="search" autocomplete="off" placeholder="Try miso, stir-fry, or flank steak" aria-label="Search the guide"></label><p class="search-status" id="search-status" aria-live="polite"></p><div id="search-results"></div></dialog>
   <dialog id="recipe-dialog" aria-labelledby="recipe-title"></dialog>
   <div id="toast" role="status" aria-live="polite"></div>

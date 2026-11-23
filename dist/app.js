@@ -1,6 +1,9 @@
 import { pantry, sauces, recipes, ingredients, days, macros } from "./food.js";
 import { meats } from "./cuts.js";
 import { restaurants, restaurantRecipes } from "./restaurants.js";
+import { chineseRegions, regionalRecipes } from "./chinese-recipes.js";
+import { plannerPage, mountPlanner } from "./planner.js";
+import { normalizeText, matchesText } from "./ingredient-match.js";
 
 const shapes = {
   mark:'<path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
@@ -19,7 +22,9 @@ const shapes = {
   check:'<path d="m5 12 4 4L19 6"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
   minus:'<path d="M5 12h14"/>',
-  printer:'<path d="M7 7V3h10v4m0 10h4V8H3v9h4m0-4h10v8H7zm11-2h.01"/>'
+  printer:'<path d="M7 7V3h10v4m0 10h4V8H3v9h4m0-4h10v8H7zm11-2h.01"/>',
+  'chevron-left':'<path d="m15 5-7 7 7 7"/>',
+  'chevron-right':'<path d="m9 5 7 7-7 7"/>'
 };
 const icon = (name, size = 20) => '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + shapes[name] + '</svg>';
 document.querySelectorAll("[data-icon]").forEach(el => { el.innerHTML = icon(el.dataset.icon, el.dataset.icon === "mark" ? 19 : 18); });
@@ -36,7 +41,11 @@ const read = (key, fallback) => {
 };
 const write = (key, value) => { try { localStorage.setItem("mise-" + key, JSON.stringify(value)); } catch {} };
 const byId = (items, id) => items.find(item => item.id === id);
-const allRecipes = [...recipes, ...restaurantRecipes];
+const allRecipes = [...restaurantRecipes, ...regionalRecipes, ...recipes];
+const recipeContext = recipe => restaurants[recipe.restaurant]?.name ?? recipe.origin ?? "Lunch plan";
+const pantryIndex = pantry.flatMap(p => p.staples.map(([name,desc,swap],index) => ({
+  name, desc, swap, cuisine:p.name, region:p.region, link:"#pantry/" + p.id + "/" + index
+})));
 const asCount = (value, max = 12) => Math.max(1, Math.min(max, Math.floor(Number(value) || 1)));
 const notice = text => {
   const toast = document.querySelector("#toast");
@@ -62,7 +71,7 @@ const dishPhoto = (recipe, lazy = true, alt = recipe.name) => '<img src="assets/
 const dayOptions = index => recipes.filter(recipe => recipe.day === index);
 const weekRecipes = () => days.map((_, index) => dayOptions(index).find(recipe => recipe.id === selected[index]) ?? dayOptions(index)[0]);
 const typeLinks = [
-  ["restaurants","bowl","Restaurant recipes","Bay Area favorites, dim sum, and more.","fern"],
+  ["restaurants","bowl","Recipe library","Restaurant favorites, dim sum, and regional Chinese cooking.","fern"],
   ["pantry","jar","Pantry staples","The ingredients that build a cuisine.","sage"],
   ["sauces","whisk","Sauce calculator","Easy sauces, scaled to your table.","peach"],
   ["lunches","bowl","5-day lunch plan","Ten high-protein recipes to mix and match.","gold"],
@@ -82,14 +91,31 @@ function pantryPage() {
   const item = byId(pantry, cuisine) ?? pantry[0];
   const regions = ["All", ...new Set(pantry.map(p => p.region))];
   const visible = pantry.filter(p => pantryRegion === "All" || p.region === pantryRegion);
-  const related = recipes.filter(r => r.cuisine.toLowerCase().startsWith(item.name.toLowerCase()));
-  return sectionIntro("Pantry", "Pantry staples", "Start with the ingredients you’ll reach for most. Find out what each one does and what you can use in a pinch.", "jar") +
-    '<section class="wrap page-body"><div class="pills" aria-label="Filter by region">' + regions.map(region => '<button data-region="' + region + '" aria-pressed="' + (pantryRegion === region) + '">' + region + '</button>').join("") + '</div><div class="pantry-layout"><aside class="cuisine-list" aria-label="Choose a cuisine">' +
+  const related = allRecipes.filter(r => r.cuisine.toLowerCase().startsWith(item.name.toLowerCase()));
+  return sectionIntro("Pantry", "Pantry staples", "Browse " + pantryIndex.length + " ingredient entries across " + pantry.length + " cuisines, with uses and substitutions.", "jar") +
+    '<section class="wrap page-body"><div class="pantry-search"><label class="field-search">' + icon("search",19) + '<input id="pantry-search" type="search" autocomplete="off" placeholder="Try kombu, chile paste, or rice noodles" aria-label="Search pantry ingredients across all cuisines"></label><button class="button light" type="button" data-clear-pantry hidden>Clear</button></div><div id="pantry-matches" hidden><p id="pantry-search-count" aria-live="polite"></p><div id="pantry-results" class="pantry-result-grid"></div></div><div id="pantry-browse"><div class="pills" aria-label="Filter by region">' + regions.map(region => '<button data-region="' + region + '" aria-pressed="' + (pantryRegion === region) + '">' + region + '</button>').join("") + '</div><div class="pantry-layout"><aside class="cuisine-list" aria-label="Choose a cuisine">' +
     visible.map(p => '<a href="#pantry/' + p.id + '" class="cuisine-choice" ' + (p.id === item.id ? 'aria-current="true"' : '') + '><span class="emblem" aria-hidden="true">' + p.emblem + '</span><span>' + p.name + '</span>' + icon("arrow",16) + '</a>').join("") +
     '</aside><article class="pantry-content"><header class="detail-banner ' + item.color + '"><span class="emblem" aria-hidden="true">' + item.emblem + '</span><div><h2>' + item.name + ' pantry</h2><p>' + item.summary + '</p></div></header><div class="staples">' +
     item.staples.map(([name,desc,swap],i) => '<div class="staple" id="ingredient-' + i + '"><h3>' + name + '</h3><p>' + desc + '</p><p class="swap"><strong>Swap</strong> ' + swap + '</p></div>').join("") +
     '</div><div class="related"><h3>Put it to work</h3><div>' + item.sauces.map(id => '<a class="text-link" href="#sauces/' + id + '">' + byId(sauces,id).name + icon("arrow-up",15) + '</a>').join("") +
-    related.map(r => '<a class="text-link" href="' + recipeRoute(r) + '">' + r.name + icon("arrow-up",15) + '</a>').join("") + '</div></div></article></div></section>';
+    related.map(r => '<a class="text-link" href="' + recipeRoute(r) + '">' + r.name + icon("arrow-up",15) + '</a>').join("") + '</div></div></article></div></div></section>';
+}
+
+function updatePantrySearch(input) {
+  const query = normalizeText(input.value);
+  const matches = view.querySelector("#pantry-matches");
+  matches.hidden = !query;
+  view.querySelector("#pantry-browse").hidden = !!query;
+  view.querySelector("[data-clear-pantry]").hidden = !input.value;
+  if (!query) return;
+  const results = pantryIndex.map(item => {
+    const title = normalizeText(item.name);
+    const weight = title === query ? 4 : title.startsWith(query) ? 3 : matchesText(query,item.name) ? 2 : 1;
+    return {item,weight};
+  }).filter(({item}) => matchesText(query,[item.name,item.desc,item.swap,item.cuisine,item.region].join(" ")))
+    .sort((a,b) => b.weight - a.weight);
+  view.querySelector("#pantry-search-count").textContent = results.length + (results.length === 1 ? " ingredient entry" : " ingredient entries") + " across all cuisines";
+  view.querySelector("#pantry-results").innerHTML = results.length ? results.map(({item}) => '<a class="pantry-result staple" href="' + item.link + '"><span class="mini">' + item.cuisine + '</span><h3>' + item.name + '</h3><p>' + item.desc + '</p><p class="swap"><strong>Swap</strong> ' + item.swap + '</p></a>').join("") : '<p class="empty">No ingredients match. Try a shorter name or a cuisine such as Korean.</p>';
 }
 
 const fractions = new Map([[0.125,"⅛"],[0.25,"¼"],[0.375,"⅜"],[0.5,"½"],[0.625,"⅝"],[0.75,"¾"],[0.875,"⅞"]]);
@@ -150,17 +176,25 @@ function duration(minutes) {
   return [hours && hours + " hr", rest && rest + " min"].filter(Boolean).join(" ");
 }
 
-function restaurantPage(filter) {
-  const filters = [["all","All recipes"],["bay","Bay Area"],["dim-sum","Dim sum"],["us","Elsewhere in the U.S."],["asia","Across Asia"]];
+function restaurantPage(filter, region) {
+  const filters = [["all","All recipes"],["bay","Bay Area"],["dim-sum","Dim sum"],["china","Regional Chinese"],["chains","Chain favorites"],["us","Elsewhere in the U.S."],["asia","Across Asia"]];
   const active = filters.some(([id]) => id === filter) ? filter : "all";
-  const visible = restaurantRecipes.filter(r => active === "all" || restaurants[r.restaurant].area === active || (active === "dim-sum" && r.dimSum));
-  return sectionIntro("Recipes", "Restaurant recipes", "Cook your way through Bay Area favorites, a dim sum brunch, and standout dishes from 2026 restaurant lists.", "bowl") +
+  const activeRegion = Object.hasOwn(chineseRegions,region) ? region : "all";
+  const visible = allRecipes.filter(r => {
+    const place = restaurants[r.restaurant];
+    return active === "all" || place?.area === active || (active === "dim-sum" && r.dimSum) ||
+      (active === "chains" && place?.chain) || (active === "china" && r.region && (activeRegion === "all" || activeRegion === r.region));
+  });
+  const regionFilters = active === "china" ? '<div class="pills recipe-region-filters" aria-label="Filter Chinese recipes by region">' + [["all","All regions"],...Object.entries(chineseRegions)].map(([id,label]) =>
+    '<a href="#restaurants/china' + (id === "all" ? "" : "/" + id) + '"' + (activeRegion === id ? ' aria-current="page"' : '') + '>' + label + '</a>').join("") + '</div>' : "";
+  return sectionIntro("Recipes", "Recipe library", "Cook Bay Area favorites, Chinese regional classics, and quick lunches.", "bowl") +
     '<section class="wrap page-body"><div class="restaurant-controls"><div class="pills" aria-label="Filter restaurant recipes">' +
     filters.map(([id,label]) => '<a href="#restaurants' + (id === "all" ? "" : "/" + id) + '" ' + (active === id ? 'aria-current="page"' : '') + '>' + label + '</a>').join("") +
-    '</div><p>' + visible.length + (visible.length === 1 ? ' recipe' : ' recipes') + '</p></div><div class="library-grid restaurant-grid">' +
+    '</div><p>' + visible.length + (visible.length === 1 ? ' recipe' : ' recipes') + '</p></div>' + regionFilters + '<div class="library-grid restaurant-grid">' +
     visible.map(r => {
       const place = restaurants[r.restaurant];
-      return '<a class="library-card restaurant-card" href="' + recipeRoute(r) + '">' + dishPhoto(r,true,"") + '<div><div class="restaurant-origin">' + place.name + ' <span>· ' + place.place + '</span></div><h2>' + r.name + '</h2><p>' + r.desc + '</p><div class="restaurant-meta">' + chip(duration(r.time),"clock") + chip(r.cuisine) + '</div></div></a>';
+      const location = place?.place ?? chineseRegions[r.region];
+      return '<a class="library-card restaurant-card" href="' + recipeRoute(r) + '">' + dishPhoto(r,true,"") + '<div><div class="restaurant-origin">' + recipeContext(r) + (location && location !== r.origin ? ' <span>· ' + location + '</span>' : '') + '</div><h2>' + r.name + '</h2><p>' + r.desc + '</p><div class="restaurant-meta">' + chip(duration(r.time),"clock") + chip(r.cuisine) + '</div></div></a>';
     }).join("") + '</div></section>';
 }
 function groceryList() {
@@ -266,46 +300,51 @@ function nutrition(r) {
 }
 
 function recipeIngredients(r) {
-  if (r.restaurant) return r.items;
+  if (r.servings) return r.items;
   return r.items.map(([id,amount]) => [amount,ingredients[id][1],ingredients[id][0]]);
 }
 
 function recipeSource(r) {
+  if (r.region) {
+    return '<div class="recipe-inspiration"><h3>' + chineseRegions[r.region] + '</h3><p>' + r.inspiration + ' This is a Mise home-kitchen adaptation.</p><div class="recipe-source-links"><a href="' + r.reference[1] + '">' + r.reference[0] + '</a></div></div>';
+  }
   if (!r.restaurant) {
     return '<div class="related source-note"><p>The bowl and its macros are Mise adaptations. See the original recipe for the published preparation.</p><a class="text-link" href="' + r.source[2] + '">' + r.source[1] + ' · ' + r.source[0] + ' ' + icon("arrow-up",15) + '</a></div>';
   }
   return '<div class="recipe-inspiration"><h3>Restaurant inspiration</h3><p>' + r.inspiration + ' This is a Mise home-kitchen adaptation.</p><div class="recipe-source-links">' +
-    restaurants[r.restaurant].sources.map(([label,url]) => '<a href="' + url + '">' + label + '</a>').join("") + '</div></div>';
+    [...(r.menu ? [r.menu] : []), ...restaurants[r.restaurant].sources].map(([label,url]) => '<a href="' + url + '">' + label + '</a>').join("") + '</div></div>';
 }
 
 function showRecipe(r) {
   const place = restaurants[r.restaurant];
+  const batchRecipe = !!r.servings;
   const scale = recipePortions / (r.servings ?? 1);
-  const byline = place ? place.name + " · " + place.place : r.cuisine;
+  const byline = place ? place.name + " · " + place.place : r.origin ? r.origin + " · " + r.cuisine : r.cuisine;
   const yieldNote = r.pieces ? '<p class="reference recipe-yield">Makes about ' + Math.round(r.pieces * scale) + ' pieces</p>' : '';
-  recipeDialog.innerHTML = '<div class="recipe-cover">' + dishPhoto(r,false) + '<button class="icon-button" type="button" data-close aria-label="Close recipe">' + icon("x") + '</button></div><div class="recipe-content"><div class="eyebrow"><i></i> ' + byline.toUpperCase() + '</div><h2 id="recipe-title">' + r.name + '</h2><p>' + r.desc + '</p><div class="recipe-meta">' + chip(duration(r.time) + (r.active ? " total" : ""),"clock") + (r.active ? chip(duration(r.active) + " hands-on") : "") + chip(r.animal,"bowl") + '</div>' + (place ? '' : nutrition(r)) +
+  recipeDialog.innerHTML = '<div class="recipe-cover">' + dishPhoto(r,false) + '<button class="icon-button" type="button" data-close aria-label="Close recipe">' + icon("x") + '</button></div><div class="recipe-content"><div class="eyebrow"><i></i> ' + byline.toUpperCase() + '</div><h2 id="recipe-title">' + r.name + '</h2><p>' + r.desc + '</p><div class="recipe-meta">' + chip(duration(r.time) + (r.active ? " total" : ""),"clock") + (r.active ? chip(duration(r.active) + " hands-on") : "") + chip(r.animal,"bowl") + '</div>' + (batchRecipe ? '' : nutrition(r)) +
     '<div class="recipe-columns"><section><div class="recipe-ingredients"><h3>Ingredients</h3><div class="count-control"><span>Servings</span>' + counter("recipe",recipePortions,8,"servings") + '</div></div>' + yieldNote + '<ul class="measure-list">' +
     recipeIngredients(r).map(([amount,unit,label]) => '<li><span>' + label + '</span><strong>' + measure(amount * scale,unit) + '</strong></li>').join("") +
-    '</ul></section><section><h3>Method</h3><ol class="steps">' + r.steps.map(step => '<li>' + step + '</li>').join("") + '</ol>' + (place ? '' : '<p class="reference">For larger batches, sear in batches to avoid crowding the pan.</p>') + '</section></div><div class="recipe-notes"><div class="sage"><h3>Substitutions</h3><p>' + r.swap + '</p></div><div class="gold"><h3>Storage & reheating</h3><p>' + r.store +
+    '</ul></section><section><h3>Method</h3><ol class="steps">' + r.steps.map(step => '<li>' + step + '</li>').join("") + '</ol>' + (batchRecipe ? '' : '<p class="reference">For larger batches, sear in batches to avoid crowding the pan.</p>') + '</section></div><div class="recipe-notes"><div class="sage"><h3>Substitutions</h3><p>' + r.swap + '</p></div><div class="gold"><h3>Storage & reheating</h3><p>' + r.store +
     '</p><p>Chill within 2 hours, use within 3–4 days or freeze, and reheat cooked leftovers to 165°F / 74°C.</p></div></div>' + recipeSource(r) +
     (r.sauce ? '<a class="text-link recipe-sauce" href="#sauces/' + r.sauce + '">Related sauce calculator</a>' : '') + '</div>';
   if (!recipeDialog.open) recipeDialog.showModal();
 }
 
 const entries = [
+  {title:"This Week", kind:"Planner", link:"#plan", desc:"Weekly meal calendar", terms:"schedule breakfast lunch dinner recipe ingredient match what can i cook"},
   ...recipes.map(r => ({title:r.name, kind:"Recipe", link:recipeRoute(r), desc:r.cuisine + " · " + r.time + " min · " + macros(r)[0] + " g protein", terms:r.items.map(([id]) => ingredients[id][0]).join(" ")})),
   ...restaurantRecipes.map(r => ({title:r.name, kind:"Recipe", link:recipeRoute(r), desc:restaurants[r.restaurant].name + " · " + restaurants[r.restaurant].place + " · " + duration(r.time), terms:[r.inspiration,r.cuisine,r.animal,r.dimSum ? "dim sum yum cha" : "",...recipeIngredients(r).map(([, ,label]) => label)].join(" ")})),
+  ...regionalRecipes.map(r => ({title:r.name, kind:"Recipe", link:recipeRoute(r), desc:r.origin + " · " + duration(r.time), terms:[r.inspiration,r.cuisine,r.animal,"regional Chinese",chineseRegions[r.region],r.dimSum ? "dim sum yum cha" : "",...recipeIngredients(r).map(([, ,label]) => label)].join(" ")})),
   ...sauces.map(s => ({title:s.name, kind:"Sauce", link:"#sauces/" + s.id, desc:s.cuisine + " · " + s.time + " min", terms:s.items.map(([name]) => name).join(" ") + " " + s.use})),
-  ...pantry.flatMap(p => p.staples.map(([name, desc],i) => ({title:name, kind:"Pantry", link:"#pantry/" + p.id + "/" + i, desc:p.name + " pantry · " + desc, terms:p.name}))),
+  ...pantryIndex.map(({name,desc,swap,cuisine,link}) => ({title:name,kind:"Pantry",link,desc:cuisine + " pantry · " + desc,terms:swap})),
   ...meats.flatMap(m => m.cuts.map(c => ({title:c[1], kind:"Meat cut", link:cutRoute(m,c), desc:m.name + " · " + c[2], terms:c.slice(3,5).join(" ")})))
 ];
-const normalize = string => string.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 function search() {
-  const query = normalize(searchInput.value);
+  const query = normalizeText(searchInput.value);
   const tokens = query.split(" ").filter(Boolean);
   const results = tokens.length ? entries.map(item => {
-    const title = normalize(item.title);
-    const searchable = normalize([item.title,item.kind,item.desc,item.terms].join(" "));
+    const title = normalizeText(item.title);
+    const searchable = normalizeText([item.title,item.kind,item.desc,item.terms].join(" "));
     const score = tokens.every(token => searchable.includes(token)) ? (title === query ? 9 : title.startsWith(query) ? 6 : title.includes(query) ? 3 : 1) : 0;
     return {item,score};
   }).filter(result => result.score).sort((a,b) => b.score-a.score).map(result => result.item) : ["Seolleongtang","Pork & Shrimp Siu Mai","Teriyaki glaze","Flank steak"].map(title => entries.find(e => e.title === title));
@@ -337,12 +376,12 @@ searchResults.addEventListener("click", event => {
 
 function renderRoute(reset = false, requestedFocus = "") {
   const [section, id, sub] = location.hash.slice(1).split("/");
-  const route = ["restaurants","pantry","sauces","lunches","meat"].includes(section) ? section : "home";
+  const route = ["plan","home","restaurants","pantry","sauces","lunches","meat"].includes(section) ? section : "plan";
   if (section === "recipe") {
     const r = byId(allRecipes,id);
     if (r) {
       if (!currentRoute) {
-        history.replaceState(null,"",r.restaurant ? "#restaurants" : "#lunches");
+        history.replaceState(null,"",r.region ? "#restaurants/china/" + r.region : r.restaurant ? "#restaurants" : "#lunches");
         renderRoute(true);
         history.replaceState(null,"",recipeRoute(r));
       }
@@ -364,21 +403,27 @@ function renderRoute(reset = false, requestedFocus = "") {
   const restoringRecipe = closedRecipe && currentRoute === hash;
   currentRoute = hash;
   hero.hidden = route !== "home";
+  if (restoringRecipe && route === "plan") {
+    document.title = "This Week — Mise";
+    return;
+  }
   let markup = "";
   let animal;
   let active;
   let target;
-  if (route === "restaurants") {
-    markup = restaurantPage(id);
+  if (route === "plan") {
+    markup = plannerPage(icon);
+  } else if (route === "restaurants") {
+    markup = restaurantPage(id,sub);
   } else if (route === "pantry") {
     const item = byId(pantry,id);
     if (item) {
       cuisine = item.id;
       if (reset && pantryRegion !== "All" && item.region !== pantryRegion) pantryRegion = "All";
     }
-    const pantryFocus = item && /^[0-5]$/.test(sub) ? sub : "";
+    const pantryFocus = item && /^\d+$/.test(sub) && Number(sub) < item.staples.length ? Number(sub) : null;
     markup = pantryPage();
-    if (pantryFocus) target = "#ingredient-" + pantryFocus;
+    if (pantryFocus !== null) target = "#ingredient-" + pantryFocus;
   } else if (route === "sauces") {
     if (reset && byId(sauces,id)) sauceFilter = "All";
     markup = saucePage(id);
@@ -394,12 +439,13 @@ function renderRoute(reset = false, requestedFocus = "") {
     markup = home();
   }
   view.innerHTML = markup;
+  if (route === "plan") mountPlanner(view.querySelector("#planner-page"), allRecipes, {icon, read, write, notice, recipeIngredients, recipeRoute, dishPhoto, duration, recipeContext});
   if (animal) drawMeat(animal,active);
   document.querySelectorAll("nav a").forEach(link => {
     if (link.hash === "#" + route) link.setAttribute("aria-current","page");
     else link.removeAttribute("aria-current");
   });
-  document.title = ({"home":"Mise — The home cook’s field guide","restaurants":"Restaurant recipes — Mise","pantry":"Pantry staples — Mise","sauces":"Sauce calculator — Mise","lunches":"5 Days of High-Protein Asian Lunches — Mise","meat":"Meat & cuts — Mise"})[route];
+  document.title = ({"plan":"This Week — Mise","home":"Mise — The home cook’s field guide","restaurants":"Recipe library — Mise","pantry":"Pantry staples — Mise","sauces":"Sauce calculator — Mise","lunches":"5 Days of High-Protein Asian Lunches — Mise","meat":"Meat & cuts — Mise"})[route];
   if (requestedFocus) view.querySelector(requestedFocus)?.focus({preventScroll:true});
   if (restoringRecipe) document.querySelector('main a[href="' + recipeRoute(closedRecipe) + '"]')?.focus({preventScroll:true});
   if (reset && target) {
@@ -421,10 +467,13 @@ for (const dialog of [searchDialog, recipeDialog]) {
   });
 }
 document.addEventListener("keydown", event => {
-  if (event.key === "/" && !["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName) && !searchDialog.open && !recipeDialog.open) {
+  if (event.key === "/" && !["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName) && !document.querySelector("dialog[open]")) {
     event.preventDefault();
     openSearch();
   }
+});
+document.addEventListener("input", event => {
+  if (event.target.id === "pantry-search") updatePantrySearch(event.target);
 });
 document.addEventListener("click", event => {
   const skip = event.target.closest(".skip");
@@ -440,6 +489,12 @@ document.addEventListener("click", event => {
   const d = button.dataset;
   if (button.hasAttribute("data-search")) openSearch();
   if (d.query) openSearch(d.query);
+  if (button.hasAttribute("data-clear-pantry")) {
+    const input = view.querySelector("#pantry-search");
+    input.value = "";
+    updatePantrySearch(input);
+    input.focus();
+  }
   if (d.region) {
     pantryRegion = d.region;
     const first = pantry.find(p => d.region === "All" || p.region === d.region);

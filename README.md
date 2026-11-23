@@ -1,6 +1,6 @@
 # Mise
 
-A static field guide for home cooking. Browse restaurant-inspired recipes, look up pantry staples, scale a sauce, plan five high-protein Asian lunches, or explore meat cuts.
+A static field guide for home cooking. Plan meals for the week, match recipes to the ingredients you have, browse regional and restaurant-inspired recipes, and look up pantry staples.
 
 ## Run locally
 
@@ -8,7 +8,7 @@ A static field guide for home cooking. Browse restaurant-inspired recipes, look 
 python3 -m http.server 8787 --directory dist
 ```
 
-Open [localhost:8787](http://localhost:8787). The site needs no build step. Lunch choices, portion counts, and grocery checkmarks are stored in the browser.
+Open [localhost:8787](http://localhost:8787). The site needs no build step. The weekly calendar, submitted ingredient lists, lunch choices, portion counts, and grocery checkmarks are stored in the browser.
 
 ## Deploy
 
@@ -19,5 +19,7 @@ GitHub Pages uses the checked-in Actions workflow and serves `dist/`. In the rep
 Every recipe links to its published source. The site's portions, ingredient combinations, and estimated macros are adaptations; the adaptations have not been independently kitchen-tested. The generated images illustrate the dishes.
 
 The restaurant collection links to menus, restaurant reporting, and 2026 dining guides. The recipes are written for home kitchens. The built-in image generator created cookbook-style illustrations of the adaptations, including the Bay Area soups, four dim sum dishes, and the regional restaurant picks in `dist/assets/`.
+
+The cookbook-style images in `dist/assets/` also illustrate the California Fish Grill and Panda Express dishes, Koi Palace dim sum, and mainland Chinese and Hong Kong recipes.
 
 The built-in image generator produced an overhead editorial photo of soy-glazed chicken, rice, edamame, and purple cabbage on a dark table, plus a nine-photo grid of the other lunch dishes. The individual WebP images are in `dist/assets/`.

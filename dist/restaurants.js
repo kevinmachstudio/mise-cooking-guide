@@ -1,3 +1,6 @@
+import { chainRestaurants, chainRecipes } from "./chain-recipes.js";
+import { koiPalace, koiRecipes } from "./chinese-recipes.js";
+
 const chronicle = ["Chronicle 2026 Bay Area Top 100", "https://www.sfchronicle.com/projects/2026/top-100-best-restaurants-san-francisco-bay-area/"];
 const dimSumGuide = ["2026 San Francisco Standard dim sum picks", "https://sfstandard.com/2026/04/25/best-dim-sum-san-francisco/"];
 const michelin = ["2026 MICHELIN Guide California", "https://guide.michelin.com/ca/en/article/michelin-guide-ceremony/guide-michelin-california"];
@@ -23,7 +26,9 @@ export const restaurants = {
     ["Asia’s 50 Best Restaurants 2026 · No. 4", "https://www.the50.com/restaurants/best-in-asia/the-list/mingles.html"]]},
   lei: {name:"Lei", place:"New York, NY", area:"us", sources:[
     ["Lei’s cat’s-ear noodles · Resy interview", "https://blog.resy.com/2025/05/lei-wine-bar-nyc/"],
-    ["2026 James Beard Award · Best New Restaurant", "https://web.jamesbeard.org/stories/james-beard-award-winners-2026"]]}
+    ["2026 James Beard Award · Best New Restaurant", "https://web.jamesbeard.org/stories/james-beard-award-winners-2026"]]},
+  ...chainRestaurants,
+  "koi-palace":koiPalace
 };
 
 // Each ingredient is [amount for the full batch, unit, shopping label].
@@ -233,5 +238,7 @@ export const restaurantRecipes = [
     ],
     swap:"Orecchiette is a good shortcut if you’d like to skip shaping. Ground beef can replace the lamb.",
     store:"Chill the ragù and cooked noodles separately. The sauce freezes well. Reheat with a spoonful of water before tossing with the noodles."
-  }
+  },
+  ...chainRecipes,
+  ...koiRecipes
 ];
