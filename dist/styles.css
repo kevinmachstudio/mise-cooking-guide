@@ -623,3 +623,18 @@ dialog::backdrop { background:#171e18a8; backdrop-filter:blur(4px); }
   .evidence-timeline li { grid-template-columns:52px minmax(0,1fr); gap:8px; }
   .evidence-year { font-size:29px; }
 }
+
+.weekly-groceries { border:1px solid var(--line); border-radius:10px; padding:16px; margin-top:18px; background:#f6f4ea; scroll-margin-top:116px; }
+.weekly-groceries-head { display:flex; justify-content:space-between; align-items:start; flex-wrap:wrap; gap:8px; margin-bottom:11px; }
+.weekly-groceries h2 { font:400 clamp(37px,5vw,53px)/.96 var(--serif); }
+.weekly-groceries-head p,.weekly-groceries [data-weekly-progress] { margin-top:4px; color:var(--muted); font-size:14px; }
+.weekly-groceries [data-weekly-progress] { margin-bottom:8px; }
+.weekly-groceries .grocery-item strong { max-width:15ch; }
+.batch-note { font-weight:700; color:#526848; font-size:11px; line-height:1.2; }
+.leftover-picker { padding:7px 9px; border:1px solid #dce2d1; border-radius:7px; background:#f3f5ea; font-size:14px; }
+.leftover-picker summary { cursor:pointer; font-weight:700; }
+.leftover-picker label { display:grid; margin-top:5px; gap:3px; }
+.leftover-picker select { width:100%; padding:5px; border:1px solid #c9cebb; border-radius:6px; background:var(--white); }
+.leftover-picker p { margin:6px 0; color:var(--muted); font-size:13px; }
+.leftover-picker a { text-decoration:underline; }
+.leftover-picker .button { padding:5px 8px; }

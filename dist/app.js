@@ -70,6 +70,7 @@ let sauceFilter = "All";
 let sauceCuisine = "All";
 let sauceQuery = "";
 let recipePortions = 1;
+let recipePortionLimit = 8;
 let plannedPortion;
 
 const recipeRoute = recipe => "#recipe/" + recipe.id;
@@ -361,7 +362,7 @@ function showRecipe(r) {
   const byline = place ? place.name + " · " + place.place : r.origin ? r.origin + " · " + r.cuisine : r.cuisine;
   const yieldNote = r.pieces ? '<p class="reference recipe-yield">Makes about ' + Math.round(r.pieces * scale) + ' pieces</p>' : '';
   recipeDialog.innerHTML = '<div class="recipe-cover">' + dishPhoto(r,false) + '<button class="icon-button" type="button" data-close aria-label="Close recipe">' + icon("x") + '</button></div><div class="recipe-content"><div class="eyebrow"><i></i> ' + byline.toUpperCase() + '</div><h2 id="recipe-title">' + r.name + '</h2><p>' + r.desc + '</p><div class="recipe-meta">' + chip(duration(r.time) + (r.active ? " total" : ""),"clock") + (r.active ? chip(duration(r.active) + " hands-on") : "") + chip(r.animal,"bowl") + '</div>' + (estimatedNutrition(r) ? nutrition(r) : '') +
-    '<div class="recipe-columns"><section><div class="recipe-ingredients"><h3>Ingredients</h3><div class="count-control"><span>Servings</span>' + counter("recipe",recipePortions,8,"servings") + '</div></div>' + yieldNote + '<ul class="measure-list">' +
+    '<div class="recipe-columns"><section><div class="recipe-ingredients"><h3>Ingredients</h3><div class="count-control"><span>Servings</span>' + counter("recipe",recipePortions,recipePortionLimit,"servings") + '</div></div>' + yieldNote + '<ul class="measure-list">' +
     recipeIngredients(r).map(([amount,unit,label]) => '<li><span>' + label + '</span><strong>' + measure(amount * scale,unit) + '</strong></li>').join("") +
     '</ul></section><section><h3>Method</h3><ol class="steps">' + r.steps.map(step => '<li>' + step + '</li>').join("") + '</ol>' + (batchRecipe ? '' : '<p class="reference">For larger batches, sear in batches to avoid crowding the pan.</p>') + '</section></div><div class="recipe-notes"><div class="sage"><h3>Substitutions</h3><p>' + r.swap + '</p></div><div class="gold"><h3>Storage & reheating</h3><p>' + r.store +
     '</p><p>Chill within 2 hours, use within 3–4 days or freeze, and reheat cooked leftovers to 165°F / 74°C.</p></div></div>' + recipeSource(r) +
@@ -430,6 +431,7 @@ function renderRoute(reset = false, requestedFocus = "") {
       if (recipeToOpen !== r) {
         returnRoute = currentRoute;
         recipePortions = plannedPortion?.hash === location.hash ? plannedPortion.servings : r.servings ?? (currentRoute.startsWith("lunches") ? portions : 1);
+        recipePortionLimit = Math.max(8,Math.ceil(recipePortions));
         plannedPortion = undefined;
         recipeToOpen = r;
       }
@@ -490,7 +492,7 @@ function renderRoute(reset = false, requestedFocus = "") {
     markup = home();
   }
   view.innerHTML = markup;
-  if (route === "plan") mountPlanner(view.querySelector("#planner-page"), allRecipes, {icon, read, write, notice, recipeIngredients, recipeRoute, dishPhoto, duration, recipeContext, weekRecipes, numberLabel});
+  if (route === "plan") mountPlanner(view.querySelector("#planner-page"), allRecipes, {icon, read, write, notice, recipeIngredients, recipeRoute, dishPhoto, duration, recipeContext, weekRecipes, numberLabel, measure});
   if (route === "sauces") view.querySelector("#sauce-search").value = sauceQuery;
   if (animal) drawMeat(animal,active);
   document.querySelectorAll(".bar nav a").forEach(link => {
@@ -596,7 +598,7 @@ document.addEventListener("click", event => {
     if (d.adjust === "sauce") { saucePortions = asCount(saucePortions + step); write("sauce-portions",saucePortions); }
     if (d.adjust === "week") { portions = asCount(portions + step,8); write("portions",portions); }
     if (d.adjust === "recipe") {
-      recipePortions = Math.max(.5,Math.min(8,recipePortions + step));
+      recipePortions = Math.max(.5,Math.min(recipePortionLimit,recipePortions + step));
       const top = recipeDialog.scrollTop;
       showRecipe(recipeToOpen);
       recipeDialog.scrollTop = top;

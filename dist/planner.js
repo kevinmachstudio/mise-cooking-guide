@@ -1,5 +1,6 @@
 import { matchInventory, matchesText } from "./ingredient-match.js";
 import { summarizeMeals, weeklyTemplates } from "./meal-templates.js";
+import { groceryTotals, grocerySignature, renderWeeklyGroceries } from "./weekly-groceries.js";
 
 const meals = {breakfast:"Breakfast", lunch:"Lunch", dinner:"Dinner"};
 const shortDay = new Intl.DateTimeFormat("en-US", {weekday:"short"});
@@ -28,7 +29,14 @@ export function storedMeal(value) {
 }
 
 function sameMeal(first, second) {
-  return first?.id === second?.id && first?.servings === second?.servings;
+  return first?.id === second?.id && first?.servings === second?.servings && first?.leftoverOf === second?.leftoverOf;
+}
+
+const mealOrder = Object.keys(meals);
+function beforeSlot(first, second) {
+  const [firstDay,firstMeal] = first.split("|");
+  const [secondDay,secondMeal] = second.split("|");
+  return firstDay < secondDay || (firstDay === secondDay && mealOrder.indexOf(firstMeal) < mealOrder.indexOf(secondMeal));
 }
 
 export function plannerPage(icon) {
@@ -42,6 +50,7 @@ export function plannerPage(icon) {
     <div class="calendar-toolbar">
       <div><h2 id="calendar-range" aria-live="polite"></h2><p id="calendar-count"></p></div>
       <div class="calendar-nav">
+        <button class="button light" type="button" aria-controls="weekly-groceries" aria-expanded="false" data-show-groceries>${icon("basket",17)} Groceries</button>
         <button class="button light" type="button" data-week-templates>Weekly templates</button>
         <button class="button light" type="button" data-plan-undo hidden>Undo</button>
         <button class="icon-button" type="button" data-week-move="-7" aria-label="Previous week">${icon("chevron-left",17)}</button>
@@ -57,6 +66,10 @@ export function plannerPage(icon) {
         <div id="shelf-results" class="shelf-results"></div>
       </aside>
     </div>
+    <section id="weekly-groceries" class="weekly-groceries" aria-labelledby="weekly-groceries-title" hidden>
+      <div class="weekly-groceries-head"><div><h2 id="weekly-groceries-title" tabindex="-1">Weekly groceries</h2><p id="weekly-groceries-range"></p></div><button class="button light" type="button" data-hide-groceries>Close list</button></div>
+      <div id="weekly-grocery-items"></div>
+    </section>
     <section class="matcher" aria-labelledby="matcher-title">
       <div class="matcher-heading"><h2 id="matcher-title">What can I cook?</h2><p>Paste what you have to find the closest recipes and see what’s missing.</p></div>
       <div class="matcher-layout">
@@ -74,7 +87,7 @@ export function plannerPage(icon) {
   </section></div>`;
 }
 
-export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIngredients, recipeRoute, dishPhoto, duration, recipeContext, weekRecipes, numberLabel}) {
+export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIngredients, recipeRoute, dishPhoto, duration, recipeContext, weekRecipes, numberLabel, measure}) {
   const grid = root.querySelector("#calendar-grid");
   const shelf = root.querySelector("#shelf-results");
   const shelfSearch = root.querySelector("#shelf-search");
@@ -85,6 +98,9 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
   const inventoryStatus = root.querySelector("#inventory-status");
   const inventoryResults = root.querySelector("#inventory-results");
   const undo = root.querySelector("[data-plan-undo]");
+  const groceryPanel = root.querySelector("#weekly-groceries");
+  const groceryButton = root.querySelector("[data-show-groceries]");
+  let shoppingItems = [];
   const recipeIndex = new Map(recipes.map(recipe => [recipe.id,recipe]));
   const cookingOrder = [...recipes].sort((a,b) => a.time - b.time || a.name.localeCompare(b.name));
   const searchIndex = new Map(recipes.map(recipe => [recipe.id, [recipe.name, recipeContext(recipe), recipe.cuisine, recipe.animal,
@@ -102,7 +118,17 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
   let plannedRecipe;
   let draftBaseline = "";
 
-  const mealAt = (data,slot) => Object.hasOwn(data,slot) ? storedMeal(data[slot]) : defaultMeals.get(slot) ?? null;
+  const rawMealAt = (data,slot) => Object.hasOwn(data,slot) ? storedMeal(data[slot]) : defaultMeals.get(slot) ?? null;
+  const validSource = (data,slot,entry) => {
+    const source = entry?.leftoverOf;
+    if (!source || !slots.has(source) || !beforeSlot(source,slot)) return false;
+    const cook = rawMealAt(data,source);
+    return cook?.id === entry.id && !cook.leftoverOf;
+  };
+  const mealAt = (data,slot) => {
+    const entry = rawMealAt(data,slot);
+    return entry?.leftoverOf && !validSource(data,slot,entry) ? {id:entry.id,servings:entry.servings} : entry;
+  };
   const portionsMenu = (value = 1,name = "servings") => '<select name="' + name + '" aria-label="Portion for this meal">' + portionChoices.map(size =>
     '<option value="' + size + '"' + (size === value ? " selected" : "") + '>' + numberLabel(size) + (size === 1 ? " serving" : " servings") + '</option>').join("") + '</select>';
   const range = new Intl.DateTimeFormat("en-US", {month:"short", day:"numeric", year:"numeric"});
@@ -115,6 +141,14 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
     const today = dateKey(new Date());
     const week = weekDates();
     weekRecipes().forEach((recipe,index) => defaultMeals.set(dateKey(week[index]) + "|lunch",{id:recipe.id,servings:1}));
+    for (const day of week) for (const [meal,label] of Object.entries(meals)) {
+      slots.set(dateKey(day) + "|" + meal,label + " · " + fullDate.format(day));
+    }
+    const batchSizes = new Map();
+    for (const slot of slots.keys()) {
+      const entry = mealAt(calendar,slot);
+      if (entry?.leftoverOf) batchSizes.set(entry.leftoverOf,(batchSizes.get(entry.leftoverOf) ?? 0) + entry.servings);
+    }
     root.querySelector("#calendar-range").textContent = range.formatRange(start,week[6]);
     let count = 0;
     grid.innerHTML = week.map(day => {
@@ -125,13 +159,13 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
         <h3><span class="calendar-weekday">${shortDay.format(day)}</span><time datetime="${key}"${isToday ? ' aria-current="date"' : ''}>${day.getDate()}</time></h3>
         ${Object.entries(meals).map(([meal, label]) => {
           const slot = key + "|" + meal;
-          slots.set(slot,label + " · " + fullDate.format(day));
           const entry = mealAt(calendar,slot);
           const recipe = recipeIndex.get(entry?.id);
+          const extra = batchSizes.get(slot) ?? 0;
           if (recipe) count++;
           return `<div class="calendar-cell" data-drop-slot="${slot}">
             <div class="slot-label"><span>${label}</span>${recipe ? `<button class="slot-remove" data-remove-meal="${slot}" type="button" aria-label="Remove ${recipe.name} from ${slots.get(slot)}">${icon("x",14)}</button>` : ""}</div>
-            ${recipe ? `<a class="planned-meal" href="${recipeRoute(recipe)}" draggable="true" data-drag-recipe="${recipe.id}" data-from-slot="${slot}" data-recipe-portion="${entry.servings}">${recipe.name}</a>${entry.servings !== 1 ? '<small class="planned-portion">' + numberLabel(entry.servings) + ' servings</small>' : ''}` : ""}
+            ${recipe ? `<a class="planned-meal" href="${recipeRoute(recipe)}" draggable="true" data-drag-recipe="${recipe.id}" data-from-slot="${slot}" data-recipe-portion="${entry.servings+extra}">${recipe.name}</a>${entry.leftoverOf ? '<small class="batch-note" title="From ' + slots.get(entry.leftoverOf) + '">Leftovers · ' + numberLabel(entry.servings) + (entry.servings === 1 ? ' serving' : ' servings') + '</small>' : extra ? '<small class="batch-note">Cook ' + numberLabel(entry.servings+extra) + ' servings</small>' : entry.servings !== 1 ? '<small class="planned-portion">' + numberLabel(entry.servings) + ' servings</small>' : ''}` : ""}
             <button class="slot-picker${recipe ? ' occupied' : ''}" data-pick-slot="${slot}" type="button" aria-label="${recipe ? "Change" : "Add recipe to"} ${slots.get(slot)}">${recipe ? "Change" : icon("plus",14) + " Add"}</button>
           </div>`;
         }).join("")}
@@ -140,22 +174,48 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
     }).join("");
     root.querySelector("#calendar-count").textContent = count + (count === 1 ? " meal planned" : " meals planned");
     undo.hidden = lastChange.length === 0;
+    if (!groceryPanel.hidden) renderGroceries();
     if (focusSlot) grid.querySelector('[data-pick-slot="' + focusSlot + '"]')?.focus({preventScroll:true});
+  }
+
+  function groceryKey() { return "weekly-grocery-" + dateKey(start); }
+
+  function renderGroceries() {
+    const cooks = new Map();
+    for (const slot of slots.keys()) {
+      const entry = mealAt(calendar,slot);
+      if (!entry) continue;
+      const source = entry.leftoverOf || slot;
+      const batch = cooks.get(source) ?? {id:entry.id,servings:0};
+      batch.servings += entry.servings;
+      cooks.set(source,batch);
+    }
+    shoppingItems = groceryTotals(cooks.values(),recipeIndex,recipeIngredients);
+    root.querySelector("#weekly-groceries-range").textContent = range.formatRange(start,shiftDay(start,6));
+    root.querySelector("#weekly-grocery-items").innerHTML = renderWeeklyGroceries(shoppingItems,read(groceryKey(),{}),measure);
   }
 
   function changeCalendar(changes, message, focusSlot, recordDefaults = false) {
     const latest = read(storageKey, {});
-    const updates = [];
-    for (const [slot,next] of changes) {
+    const updates = new Map();
+    function stage(slot,next) {
       const previous = latest[slot];
-      if (sameMeal(mealAt(latest,slot),next) && (!recordDefaults || Object.hasOwn(latest,slot))) continue;
-      updates.push({slot, previous, next});
+      if (sameMeal(rawMealAt(latest,slot),next) && (!recordDefaults || Object.hasOwn(latest,slot))) return;
+      updates.set(slot,{slot,previous:updates.has(slot) ? updates.get(slot).previous : previous,next});
       latest[slot] = next;
     }
-    if (updates.length) {
-      lastChange = updates;
+    for (const change of changes) stage(...change);
+    let replanned = 0;
+    for (const slot of slots.keys()) {
+      const entry = rawMealAt(latest,slot);
+      if (!entry?.leftoverOf || validSource(latest,slot,entry)) continue;
+      stage(slot,{id:entry.id,servings:entry.servings});
+      replanned++;
+    }
+    if (updates.size) {
+      lastChange = [...updates.values()];
       write(storageKey,latest);
-      notice(message);
+      notice(message + (replanned ? " · " + replanned + (replanned === 1 ? " leftover became a separate cook" : " leftovers became separate cooks") : ""));
     }
     renderWeek(focusSlot);
   }
@@ -205,9 +265,15 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
     activeSlot = slot;
     const entry = mealAt(read(storageKey,{}),slot);
     const existing = recipeIndex.get(entry?.id);
+    const options = [...slots].filter(([source])=>beforeSlot(source,slot)).map(([source,label])=>{
+      const cook = mealAt(calendar,source);
+      if (!cook || cook.leftoverOf) return "";
+      return '<option value="' + source + '" data-recipe="' + cook.id + '"' + (entry?.leftoverOf === source ? ' selected' : '') + '>' + label + ' · ' + recipeIndex.get(cook.id)?.name + '</option>';
+    }).join("");
     showDialog(existing ? "Change recipe" : "Add a recipe", `<p class="planner-dialog-context">${slots.get(slot)}${existing ? " · Replacing " + existing.name : ""}</p>
       <label class="field-search">${icon("search",18)}<input type="search" id="picker-search" aria-label="Search recipes to add" placeholder="Try galbi, shrimp, or tofu" autocomplete="off"></label>
       <div class="picker-portion"><label>Portion ${portionsMenu(entry?.servings,"picker-servings")}</label>${existing ? '<button type="button" class="button light" data-save-portion>Save portion</button>' : ''}</div>
+      ${options ? `<details class="leftover-picker"${entry?.leftoverOf ? ' open' : ''}><summary>Use leftovers</summary><form id="plan-leftovers"><label>Cooked earlier this week <select name="source" required><option value="">Choose the cooking meal</option>${options}</select></label><p>The source batch grows by the portion above. Refrigerate promptly and freeze anything you’ll keep longer than 3–4 days. <a href="https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts">FoodSafety.gov storage chart</a></p><button class="button light" type="submit">Save leftovers</button></form></details>` : ''}
       <div id="picker-results" class="picker-results"></div>`);
     renderPicker();
     dialog.querySelector("#picker-search").focus();
@@ -334,6 +400,13 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
     }
     const target = mealAt(latest,slot);
     const changes = from ? [[from,target],[slot,entry]] : [[slot,entry]];
+    if (from) {
+      const moves = new Map([[from,slot],[slot,from]]);
+      for (const position of slots.keys()) {
+        const planned = mealAt(latest,position);
+        if (moves.has(planned?.leftoverOf)) changes.push([moves.get(position) ?? position,{...planned,leftoverOf:moves.get(planned.leftoverOf)}]);
+      }
+    }
     const message = from ? (target ? "Meals swapped" : "Meal moved") : (target ? "Meal replaced" : "Meal added");
     changeCalendar(changes,message);
   });
@@ -347,7 +420,16 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
     }
     if (!button) return;
     const data = button.dataset;
-    if (data.weekMove) {
+    if (button === groceryButton || button.hasAttribute("data-hide-groceries")) {
+      groceryPanel.hidden = !groceryPanel.hidden;
+      groceryButton.setAttribute("aria-expanded",String(!groceryPanel.hidden));
+      if (groceryPanel.hidden) groceryButton.focus();
+      else {
+        renderGroceries();
+        groceryPanel.scrollIntoView({block:"start"});
+        root.querySelector("#weekly-groceries-title").focus({preventScroll:true});
+      }
+    } else if (data.weekMove) {
       start = shiftDay(start,Number(data.weekMove));
       renderWeek();
     } else if (button.hasAttribute("data-week-today")) {
@@ -364,11 +446,12 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
     } else if (data.planRecipe) {
       openSchedule(recipeIndex.get(data.planRecipe));
     } else if (data.chooseRecipe || button.hasAttribute("data-save-portion")) {
-      const id = data.chooseRecipe ?? mealAt(read(storageKey,{}),activeSlot)?.id;
+      const current = mealAt(read(storageKey,{}),activeSlot);
+      const entry = data.chooseRecipe ? {id:data.chooseRecipe} : current;
       const servings = Number(dialog.querySelector('[name="picker-servings"]').value);
-      if (!id) return;
+      if (!entry) return;
       dialog.close();
-      changeCalendar([[activeSlot,{id,servings}]],"Recipe saved for " + slots.get(activeSlot),activeSlot);
+      changeCalendar([[activeSlot,{...entry,servings}]],"Recipe saved for " + slots.get(activeSlot),activeSlot);
     } else if (button.hasAttribute("data-jump-matcher")) {
       inventoryInput.focus();
     } else if (button.hasAttribute("data-inventory-example")) {
@@ -380,6 +463,17 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
   root.addEventListener("input", event => {
     if (event.target === shelfSearch) renderShelf();
     if (event.target.id === "picker-search") renderPicker();
+  });
+  groceryPanel.addEventListener("change", event => {
+    const input = event.target;
+    const item = shoppingItems.find(item=>item.key === input.dataset.weeklyItem);
+    if (!item) return;
+    const checked = read(groceryKey(),{});
+    if (input.checked) checked[item.key] = grocerySignature(item);
+    else delete checked[item.key];
+    write(groceryKey(),checked);
+    const completed = shoppingItems.filter(item=>checked[item.key] === grocerySignature(item)).length;
+    groceryPanel.querySelector("[data-weekly-progress]").textContent = completed + " of " + shoppingItems.length + " ingredients checked";
   });
   dialog.addEventListener("change", event => {
     if (event.target.closest("#schedule-recipe")) updateDestination();
@@ -394,6 +488,24 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
     }
   });
   dialog.addEventListener("submit", event => {
+    if (event.target.id === "plan-leftovers") {
+      event.preventDefault();
+      const chosen = event.target.elements.source.selectedOptions[0];
+      const source = chosen.value;
+      const latest = read(storageKey,{});
+      const cook = mealAt(latest,source);
+      const servings = Number(dialog.querySelector('[name="picker-servings"]').value);
+      const entry = {id:chosen.dataset.recipe,servings,leftoverOf:source};
+      if (!cook || !validSource(latest,activeSlot,entry)) {
+        const message = dialog.querySelector("[data-draft-message]");
+        message.textContent = "That cooking meal changed. Close and reopen this slot to choose another batch.";
+        message.hidden = false;
+        return;
+      }
+      dialog.close();
+      changeCalendar([[source,cook],[activeSlot,entry]],"Leftovers linked to " + slots.get(source),activeSlot,true);
+      return;
+    }
     if (event.target.id === "apply-week-template") {
       event.preventDefault();
       const selected = chosenTemplate();
