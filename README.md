@@ -16,6 +16,10 @@ On **This Week**, use **Kitchen data** to copy all recipe notes or transfer save
 
 Use **Change → Quick swaps** on a planned meal to see faster, higher-protein, or ingredient-based alternatives and preview changes to weekly groceries. **Share week** copies the displayed plan and grocery checklist as text, including batch sizes and leftover sources.
 
+Drag a meal by its **Move** grip to transfer it to a different day or meal slot. A filled destination swaps the two meals. Drop on a day heading to keep the same meal time, or press **Move** to pick a slot with the keyboard or touch.
+
+Each recipe has **Original**, **Restaurant-style**, and **Fitness** versions. The chosen version has its own measured quantities and directions and scales with the recipe's serving control. The calendar and groceries use Original quantities.
+
 Weekday calendar slots use the lunch plan until edited. Weekly templates preview and apply a full week of meals with daily estimated protein and calories. The sauce calculator filters by style and use, and the seafood directory links to five recipes or transferable methods per fish.
 
 The Nutrition & Longevity guide links to primary studies and public-health guidance. Its hero uses a generated editorial photo of a Japanese-inspired lunch with tofu, greens, sweet potato, and noodles.

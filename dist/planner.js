@@ -61,7 +61,7 @@ export function plannerPage(icon) {
       </div>
     </div>
     <div class="planner-layout">
-      <div><div id="calendar-grid" class="calendar-grid"></div><p class="calendar-note">Weekday lunches start with your <a href="#lunches">5-day lunch plan</a>. Calendar edits are saved in this browser.</p></div>
+      <div><p class="calendar-hint">${icon("grip",17)} Drag a meal onto any slot. Drop on a day heading to keep its meal time.</p><div id="calendar-grid" class="calendar-grid"></div><p class="calendar-note">Weekday lunches start with your <a href="#lunches">5-day lunch plan</a>. Calendar edits are saved in this browser.</p></div>
       <aside class="recipe-shelf" aria-labelledby="shelf-title">
         <h2 id="shelf-title">Recipe shelf</h2><p>Drag a recipe onto the calendar, or select it to pick a day.</p>
         <label class="field-search">${icon("search",17)}<input type="search" id="shelf-search" placeholder="Find a recipe" aria-label="Search the recipe shelf" autocomplete="off"></label>
@@ -116,6 +116,11 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
   let lastChange = [];
   let drag;
   let highlighted;
+  let dragOrigin;
+  let pointerDrag;
+  let ignoreMoveClick;
+  let moveSource;
+  let moveCalendar;
   let activeSlot;
   let plannedRecipe;
   let draftBaseline = "";
@@ -175,7 +180,7 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
       const key = dateKey(day);
       const isToday = key === today;
       const daily = summarizeMeals(Object.keys(meals).map(meal=>mealAt(calendar,key + "|" + meal)),recipeIndex);
-      return `<article class="calendar-day${isToday ? ' current-day' : ''}" aria-label="${fullDate.format(day)}">
+      return `<article class="calendar-day${isToday ? ' current-day' : ''}" data-drop-day="${key}" aria-label="${fullDate.format(day)}">
         <h3><span class="calendar-weekday">${shortDay.format(day)}</span><time datetime="${key}"${isToday ? ' aria-current="date"' : ''}>${day.getDate()}</time></h3>
         ${Object.entries(meals).map(([meal, label]) => {
           const slot = key + "|" + meal;
@@ -186,7 +191,8 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
           return `<div class="calendar-cell" data-drop-slot="${slot}">
             <div class="slot-label"><span>${label}</span>${recipe ? `<button class="slot-remove" data-remove-meal="${slot}" type="button" aria-label="Remove ${recipe.name} from ${slots.get(slot)}">${icon("x",14)}</button>` : ""}</div>
             ${recipe ? `<a class="planned-meal" href="${recipeRoute(recipe)}" draggable="true" data-drag-recipe="${recipe.id}" data-from-slot="${slot}" data-recipe-portion="${entry.servings+extra}">${recipe.name}</a>${entry.leftoverOf ? '<small class="batch-note" title="From ' + slots.get(entry.leftoverOf) + '">Leftovers · ' + numberLabel(entry.servings) + (entry.servings === 1 ? ' serving' : ' servings') + '</small>' : extra ? '<small class="batch-note">Cook ' + numberLabel(entry.servings+extra) + ' servings</small>' : entry.servings !== 1 ? '<small class="planned-portion">' + numberLabel(entry.servings) + ' servings</small>' : ''}` : ""}
-            <button class="slot-picker${recipe ? ' occupied' : ''}" data-pick-slot="${slot}" type="button" aria-label="${recipe ? "Change" : "Add recipe to"} ${slots.get(slot)}">${recipe ? "Change" : icon("plus",14) + " Add"}</button>
+            <div class="slot-actions">${recipe ? `<button class="slot-move" data-move-meal="${slot}" type="button" aria-label="Move ${recipe.name} from ${slots.get(slot)}" title="Drag or choose a destination">${icon("grip",15)} Move</button>` : ""}
+              <button class="slot-picker${recipe ? ' occupied' : ''}" data-pick-slot="${slot}" type="button" aria-label="${recipe ? "Change" : "Add recipe to"} ${slots.get(slot)}">${recipe ? "Change" : icon("plus",14) + " Add"}</button></div>
           </div>`;
         }).join("")}
         <div class="day-nutrition">${daily.known ? `<strong>${Math.round(daily.protein)} g protein</strong><span>${Math.round(daily.kcal).toLocaleString("en-US")} kcal · est.</span>${daily.count > daily.known ? `<small>${daily.known} of ${daily.count} meals</small>` : ''}` : daily.count ? 'Estimate unavailable' : ''}</div>
@@ -488,52 +494,55 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
   }
 
   function clearDrag() {
-    highlighted?.classList.remove("drop-target");
-    highlighted = null;
+    setDropTarget(null);
+    dragOrigin?.classList.remove("drag-source");
+    dragOrigin = null;
+    pointerDrag?.ghost?.remove();
+    if (pointerDrag?.frame) cancelAnimationFrame(pointerDrag.frame);
+    pointerDrag = null;
+    grid.closest(".planner-layout").classList.remove("dragging");
     grid.classList.remove("dragging");
     drag = null;
   }
 
-  root.addEventListener("dragstart", event => {
-    const source = event.target.closest("[data-drag-recipe]");
-    if (!source || !event.dataTransfer) return;
-    const from = source.dataset.fromSlot;
-    const entry = from ? mealAt(calendar,from) : {id:source.dataset.dragRecipe,servings:1};
-    drag = {entry,from};
-    event.dataTransfer.setData("text/plain",entry.id);
-    event.dataTransfer.effectAllowed = drag.from ? "move" : "copy";
-    grid.classList.add("dragging");
-  });
-  root.addEventListener("dragend",clearDrag);
-  grid.addEventListener("dragover", event => {
-    const target = event.target.closest("[data-drop-slot]");
-    if (!drag || !target) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = drag.from ? "move" : "copy";
-    if (highlighted !== target) {
-      highlighted?.classList.remove("drop-target");
-      target.classList.add("drop-target");
-      highlighted = target;
-    }
-  });
-  grid.addEventListener("dragleave", event => {
-    if (highlighted && !highlighted.contains(event.relatedTarget)) {
+  const slotCell = slot => grid.querySelector('[data-drop-slot="' + slot + '"]');
+  function dropSlot(element) {
+    const day = element?.closest("[data-drop-day]");
+    const exact = element?.closest("[data-drop-slot]");
+    if (!day || !grid.contains(day)) return null;
+    const slot = exact?.dataset.dropSlot ?? (drag?.from ? day.dataset.dropDay + "|" + drag.from.split("|")[1] : null);
+    return slot === drag?.from ? null : slot;
+  }
+
+  function setDropTarget(slot) {
+    const target = slot ? slotCell(slot) : null;
+    if (highlighted === target) return;
+    if (highlighted) {
       highlighted.classList.remove("drop-target");
-      highlighted = null;
+      delete highlighted.dataset.dropAction;
     }
-  });
-  grid.addEventListener("drop", event => {
-    const slot = event.target.closest("[data-drop-slot]")?.dataset.dropSlot;
-    if (!drag || !slots.has(slot)) return;
-    event.preventDefault();
-    const {entry,from} = drag;
-    clearDrag();
-    if (from === slot || !recipeIndex.has(entry.id)) return;
+    highlighted = target;
+    if (!target) return;
+    const occupied = mealAt(calendar,slot);
+    target.dataset.dropAction = drag.from ? (occupied ? "Swap here" : "Move here") : (occupied ? "Replace" : "Add here");
+    target.classList.add("drop-target");
+  }
+
+  function startDrag(entry, from) {
+    drag = {entry,from};
+    dragOrigin = from ? slotCell(from) : null;
+    dragOrigin?.classList.add("drag-source");
+    grid.classList.add("dragging");
+    grid.closest(".planner-layout").classList.add("dragging");
+  }
+
+  function applyDrop({entry,from}, slot) {
+    if (!slots.has(slot) || from === slot || !recipeIndex.has(entry.id)) return false;
     const latest = read(storageKey,{});
     if (from && !sameMeal(mealAt(latest,from),entry)) {
       renderWeek();
       notice("This meal changed in another tab");
-      return;
+      return false;
     }
     const target = mealAt(latest,slot);
     const changes = from ? [[from,target],[slot,entry]] : [[slot,entry]];
@@ -545,7 +554,141 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
       }
     }
     const message = from ? (target ? "Meals swapped" : "Meal moved") : (target ? "Meal replaced" : "Meal added");
-    changeCalendar(changes,message);
+    return changeCalendar(changes,message);
+  }
+
+  function completeDrag(slot) {
+    const movement = drag;
+    clearDrag();
+    if (movement && slot && applyDrop(movement,slot) && movement.from) {
+      slotCell(slot)?.querySelector("[data-move-meal]")?.focus({preventScroll:true});
+    }
+  }
+
+  function openMove(from, message = "") {
+    moveSource = from;
+    moveCalendar = read(storageKey,{});
+    const entry = mealAt(moveCalendar,from);
+    const name = recipeIndex.get(entry?.id)?.name;
+    if (!name) {
+      dialog.close();
+      renderWeek();
+      notice("This meal changed in another tab");
+      return;
+    }
+    const [fromDay] = from.split("|");
+    const dates = weekDates().sort((a,b) => Number(dateKey(b) === fromDay) - Number(dateKey(a) === fromDay));
+    showDialog("Move meal", `<p class="planner-dialog-context"><strong>${name}</strong> · ${slots.get(from)}</p>
+      <form id="move-meal" class="move-meal-form"><label>Move to
+        <select name="destination" required><option value="">Choose a day and meal</option>${dates.map(day => {
+          const key = dateKey(day);
+          return '<optgroup label="' + fullDate.format(day) + '">' + Object.entries(meals).map(([meal,label]) => {
+            const slot = key + "|" + meal;
+            if (slot === from) return "";
+            const occupied = recipeIndex.get(mealAt(moveCalendar,slot)?.id);
+            return '<option value="' + slot + '">' + label + (occupied ? " · " + occupied.name : " · Empty") + '</option>';
+          }).join("") + '</optgroup>';
+        }).join("")}</select></label>
+        <p class="schedule-warning" role="status">${message || "Choosing a filled slot swaps the two meals."}</p>
+        <button class="button dark" type="submit" disabled>Move meal</button>
+      </form>`);
+    dialog.querySelector('[name="destination"]').focus();
+  }
+
+  function updateMove(form) {
+    const destination = form.elements.destination.value;
+    const target = recipeIndex.get(mealAt(moveCalendar,destination)?.id);
+    const submit = form.querySelector('[type="submit"]');
+    submit.disabled = !destination;
+    submit.textContent = target ? "Swap meals" : "Move meal";
+    form.querySelector("[role=status]").textContent = target
+      ? target.name + " will move to " + slots.get(moveSource) + "."
+      : destination ? "Move to " + slots.get(destination) + "." : "Choosing a filled slot swaps the two meals.";
+  }
+
+  function trackPointer() {
+    if (!pointerDrag?.ghost || !root.isConnected) return;
+    const {x,y,ghost} = pointerDrag;
+    const top = Math.max(0,document.querySelector(".top").getBoundingClientRect().bottom);
+    const edge = 58;
+    const speed = Math.min(edge,Math.max(0, y - (window.innerHeight - edge))) - Math.min(edge,Math.max(0, top + edge - y));
+    if (speed) window.scrollBy(0,speed * .28);
+    ghost.style.transform = "translate(" + (x + 12) + "px," + (y + 14) + "px)";
+    setDropTarget(dropSlot(document.elementFromPoint(x,y)));
+    pointerDrag.frame = requestAnimationFrame(trackPointer);
+  }
+
+  grid.addEventListener("pointerdown", event => {
+    const button = event.target.closest("[data-move-meal]");
+    if (!button || event.button !== 0 || !event.isPrimary) return;
+    ignoreMoveClick = null;
+    pointerDrag = {button,id:event.pointerId,from:button.dataset.moveMeal,x:event.clientX,y:event.clientY};
+    button.setPointerCapture(event.pointerId);
+  });
+  grid.addEventListener("pointermove", event => {
+    if (pointerDrag?.id !== event.pointerId) return;
+    if (!pointerDrag.ghost) {
+      if (Math.hypot(event.clientX-pointerDrag.x,event.clientY-pointerDrag.y) < 7) return;
+      const {from} = pointerDrag;
+      const entry = mealAt(calendar,from);
+      if (!entry) return;
+      startDrag(entry,from);
+      const ghost = document.createElement("span");
+      ghost.className = "calendar-drag-label";
+      ghost.textContent = recipeIndex.get(entry.id).name;
+      ghost.setAttribute("aria-hidden","true");
+      root.append(ghost);
+      pointerDrag.ghost = ghost;
+      pointerDrag.frame = requestAnimationFrame(trackPointer);
+    }
+    pointerDrag.x = event.clientX;
+    pointerDrag.y = event.clientY;
+  });
+  grid.addEventListener("pointerup", event => {
+    if (pointerDrag?.id !== event.pointerId) return;
+    if (pointerDrag.ghost) {
+      ignoreMoveClick = pointerDrag.button;
+      completeDrag(dropSlot(document.elementFromPoint(event.clientX,event.clientY)));
+    } else clearDrag();
+  });
+  for (const type of ["pointercancel","lostpointercapture"]) {
+    grid.addEventListener(type,event => {
+      if (pointerDrag?.id === event.pointerId) clearDrag();
+    });
+  }
+  grid.addEventListener("keydown", event => {
+    if (event.key !== "Escape" || !pointerDrag?.ghost) return;
+    ignoreMoveClick = pointerDrag.button;
+    clearDrag();
+  });
+
+  root.addEventListener("dragstart", event => {
+    const source = event.target.closest("[data-drag-recipe]");
+    if (!source || !event.dataTransfer) return;
+    const from = source.dataset.fromSlot;
+    const entry = from ? mealAt(calendar,from) : {id:source.dataset.dragRecipe,servings:1};
+    if (!entry) return;
+    startDrag(entry,from);
+    event.dataTransfer.setData("text/plain",entry.id);
+    event.dataTransfer.effectAllowed = from ? "move" : "copy";
+  });
+  root.addEventListener("dragend",clearDrag);
+  grid.addEventListener("dragover", event => {
+    if (!drag) return;
+    const slot = dropSlot(event.target);
+    setDropTarget(slot);
+    if (!slot) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = drag.from ? "move" : "copy";
+  });
+  grid.addEventListener("dragleave", event => {
+    if (!grid.contains(event.relatedTarget)) setDropTarget(null);
+  });
+  grid.addEventListener("drop", event => {
+    if (!drag) return;
+    const slot = dropSlot(event.target);
+    if (slot) event.preventDefault();
+    completeDrag(slot);
   });
 
   root.addEventListener("click", event => {
@@ -582,6 +725,9 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
       copyText(dialog.querySelector("#share-week-text"),dialog.querySelector("[data-copy-week-status]"));
     } else if (data.pickSlot) {
       openPicker(data.pickSlot);
+    } else if (data.moveMeal) {
+      if (button === ignoreMoveClick && event.detail) return;
+      openMove(data.moveMeal);
     } else if (button.hasAttribute("data-quick-swaps")) {
       openSwaps();
     } else if (button.hasAttribute("data-back-to-picker")) {
@@ -639,6 +785,7 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
       return;
     }
     if (event.target.closest("#schedule-recipe")) updateDestination();
+    if (event.target.closest("#move-meal")) updateMove(event.target.form);
     if (event.target.id === "week-template") renderTemplatePreview();
     dialog.dataset.draft = String(dialogValues() !== draftBaseline);
     dialog.querySelector("[data-draft-message]").hidden = true;
@@ -650,6 +797,22 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
     }
   });
   dialog.addEventListener("submit", event => {
+    if (event.target.id === "move-meal") {
+      event.preventDefault();
+      const destination = event.target.elements.destination.value;
+      if (!slots.has(destination) || destination === moveSource) return;
+      const latest = read(storageKey,{});
+      const entry = mealAt(moveCalendar,moveSource);
+      if (!sameMeal(entry,mealAt(latest,moveSource)) || !sameMeal(mealAt(moveCalendar,destination),mealAt(latest,destination))) {
+        openMove(moveSource,"The calendar changed. Pick a destination again.");
+        return;
+      }
+      if (applyDrop({entry,from:moveSource},destination)) {
+        dialog.close();
+        slotCell(destination)?.querySelector("[data-move-meal]")?.focus();
+      }
+      return;
+    }
     if (event.target.id === "plan-leftovers") {
       event.preventDefault();
       const chosen = event.target.elements.source.selectedOptions[0];

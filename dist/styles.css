@@ -261,7 +261,14 @@ dialog::backdrop { background:#171e18a8; backdrop-filter:blur(4px); }
 .recipe-content h2 { font:400 clamp(39px,6vw,62px)/.91 var(--serif); letter-spacing:-.022em; margin:9px 0; }
 .recipe-content>p:not(.reference) { color:var(--muted); }
 .recipe-meta { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
-.recipe-meta .note-jump { margin-inline-start:auto; padding:5px 10px; }
+.recipe-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-block:13px 10px; }
+.recipe-toolbar .note-jump { margin-inline-start:auto; padding:6px 10px; }
+.recipe-version-picker { display:inline-flex; flex-wrap:wrap; gap:3px; padding:3px; background:#f0f0e4; border:1px solid #e0e1d2; border-radius:9px; }
+.recipe-version-picker button { background:transparent; border:0; border-radius:6px; color:#4d5a43; font-size:.875rem; font-weight:700; padding:6px 10px; }
+.recipe-version-picker button:hover { background:#e0e9d4; }
+.recipe-version-picker button[aria-pressed="true"] { color:var(--white); background:#34452e; }
+.recipe-description { color:var(--muted); }
+.recipe-plan-portion { margin-top:5px; }
 .macro-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; }
 .macro-grid div { display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--sage); border-radius:7px; padding:6px; }
 .macro-grid strong { font-size:18px; }
@@ -422,6 +429,7 @@ dialog::backdrop { background:#171e18a8; backdrop-filter:blur(4px); }
 .calendar-nav .button { padding:7px 10px; }
 .calendar-nav .icon-button { width:36px; height:36px; border-radius:8px; }
 .planner-layout { display:grid; grid-template-columns:minmax(0,1fr) 255px; gap:14px; align-items:start; }
+.calendar-hint { display:flex; align-items:center; gap:5px; margin-bottom:7px; color:var(--muted); font-size:.875rem; }
 .calendar-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; }
 .calendar-day { min-width:0; display:grid; grid-template-rows:auto repeat(3,1fr); background:#f8f6ed; border:1px solid #e6e2d5; border-radius:10px; overflow:hidden; }
 .calendar-day h3 { display:flex; justify-content:space-between; align-items:center; gap:3px; padding:8px 8px 7px; font-size:13px; font-weight:700; min-height:46px; border-bottom:1px solid var(--line); }
@@ -429,9 +437,13 @@ dialog::backdrop { background:#171e18a8; backdrop-filter:blur(4px); }
 .calendar-day.current-day { background:#f4f4e7; border-color:#a8b391; }
 .calendar-day.current-day h3 { background:#e2ead5; border-color:#d2ddc1; }
 .calendar-day.current-day time { border-radius:50%; background:#34452e; color:#fffdf4; }
-.calendar-cell { margin:5px; border:1px solid #e8e2d4; background:var(--white); border-radius:6px; min-height:100px; padding:6px; display:flex; flex-direction:column; gap:4px; transition:background .15s,border-color .15s; }
+.calendar-cell { position:relative; margin:5px; border:1px solid #e8e2d4; background:var(--white); border-radius:6px; min-height:100px; padding:6px; display:flex; flex-direction:column; gap:4px; transition:background .15s,border-color .15s; }
 .calendar-grid.dragging .calendar-cell { border-style:dashed; border-color:#a5ad94; }
+.planner-layout.dragging,.calendar-grid.dragging .slot-move { cursor:grabbing; }
+.calendar-grid .calendar-cell.drag-source { opacity:.55; }
 .calendar-grid .calendar-cell.drop-target { background:#e3ebd5; border-color:#5e7952; outline:2px solid #5e7952; outline-offset:-1px; }
+.calendar-cell.drop-target::after { content:attr(data-drop-action); position:absolute; inset:auto 3px 3px; padding:3px; border-radius:4px; background:#34452e; color:var(--white); font-size:.75rem; font-weight:700; text-align:center; pointer-events:none; }
+.calendar-drag-label { position:fixed; top:0; left:0; z-index:10; max-width:min(190px,43vw); padding:6px 9px; border-radius:6px; background:#34452e; color:var(--white); box-shadow:0 3px 11px #21291e40; pointer-events:none; font-size:.875rem; }
 .slot-label { display:flex; justify-content:space-between; gap:2px; align-items:center; color:#585d4e; font-size:12px; font-weight:700; min-height:20px; }
 .slot-remove { padding:1px; display:grid; place-items:center; border:0; border-radius:4px; background:transparent; color:#85503d; }
 .slot-remove:hover { background:#f0ded4; }
@@ -439,6 +451,11 @@ dialog::backdrop { background:#171e18a8; backdrop-filter:blur(4px); }
 .slot-picker:hover { background:#e8ecdc; border-color:#7f9471; }
 .slot-picker.occupied { background:transparent; color:#52594b; border-color:transparent; min-height:26px; text-align:left; }
 .slot-picker.occupied:hover { background:#edf0e3; text-decoration:underline; }
+.slot-actions { display:flex; flex-wrap:wrap; gap:3px; align-items:center; margin-top:auto; }
+.slot-actions .slot-picker.occupied,.slot-move { width:auto; margin:0; padding:2px 3px; min-height:28px; line-height:1; font-size:.75rem; }
+.slot-move { display:inline-flex; align-items:center; justify-content:center; gap:1px; background:#eef2e4; color:#3d5135; border:1px solid #d9e0cc; border-radius:5px; font-weight:700; cursor:grab; touch-action:none; user-select:none; }
+.slot-move:hover { background:#dfe8d2; border-color:#a0b18d; }
+.slot-move:active { cursor:grabbing; }
 .planned-meal { display:block; font-size:13px; line-height:1.24; font-weight:700; border-radius:4px; overflow-wrap:anywhere; cursor:grab; }
 .planned-meal:hover { color:#894e34; text-decoration:underline; }
 .planned-meal:active,.shelf-recipe:active { cursor:grabbing; }
@@ -495,6 +512,10 @@ dialog::backdrop { background:#171e18a8; backdrop-filter:blur(4px); }
 .schedule-recipe label { display:grid; gap:4px; min-width:0; font-weight:700; font-size:14px; }
 .schedule-recipe select { width:100%; padding:7px 22px 7px 7px; background:var(--white); border:1px solid #c9cebb; border-radius:6px; }
 .schedule-warning { font-size:14px; color:#854b30; align-self:center; }
+.move-meal-form { display:grid; gap:10px; }
+.move-meal-form label { display:grid; gap:4px; font-size:.875rem; font-weight:700; }
+.move-meal-form select { width:100%; padding:7px; background:var(--white); border:1px solid #c9cebb; border-radius:6px; }
+.move-meal-form .button { justify-self:start; }
 
 @media (max-width:1120px) {
   .planner-layout { grid-template-columns:minmax(0,1fr) 205px; gap:8px; }
@@ -524,6 +545,7 @@ dialog::backdrop { background:#171e18a8; backdrop-filter:blur(4px); }
   .planner-intro-inner { flex-direction:column; gap:12px; }
   .planner-match-link { align-self:start; max-width:none; }
   .matcher-layout { grid-template-columns:1fr; }
+  .slot-actions .slot-picker.occupied,.slot-move { min-height:35px; padding-inline:6px; }
 }
 @media (max-width:360px) {
   .bar nav a { font-size:11px; }

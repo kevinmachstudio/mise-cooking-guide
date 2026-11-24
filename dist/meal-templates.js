@@ -1,4 +1,4 @@
-import { macros } from "./food.js";
+import { ingredients, macros } from "./food.js";
 
 // Approximate kcal, protein, carbs and fat per 100 g. Use the label for whey and packaged foods.
 const components = {
@@ -89,6 +89,21 @@ export const templateRecipes = [
 export function estimatedNutrition(recipe) {
   if (recipe?.template) return recipe.nutrition;
   if (Number.isInteger(recipe?.day)) return macros(recipe);
+}
+
+const nutritionRates = new Map([
+  ...Object.values(ingredients).map(([label,unit,,protein,carbs,fat]) => [unit+"|"+label,[protein,carbs,fat,4*protein+4*carbs+9*fat]]),
+  ...Object.values(components).map(([label,kcal,protein,carbs,fat]) => ["g|"+label,[protein,carbs,fat,kcal].map(value => value/100)])
+]);
+
+export function estimatedVersionNutrition(items, servings) {
+  const totals = [0,0,0,0];
+  for (const [amount,unit,label] of items) {
+    const rates = nutritionRates.get(unit+"|"+label);
+    if (!rates) return null;
+    rates.forEach((value,index) => { totals[index] += amount * value / servings; });
+  }
+  return totals;
 }
 
 const breakfast = ["protein-yogurt-oats","turkey-egg-skillet"];

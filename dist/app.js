@@ -4,10 +4,11 @@ import { restaurants, restaurantRecipes } from "./restaurants.js";
 import { chineseRegions, regionalRecipes } from "./chinese-recipes.js";
 import { plannerPage, mountPlanner, storedMeal } from "./planner.js";
 import { normalizeText, matchesText } from "./ingredient-match.js";
-import { templateRecipes, estimatedNutrition } from "./meal-templates.js";
+import { templateRecipes, estimatedNutrition, estimatedVersionNutrition } from "./meal-templates.js";
 import { fish, fishGroups } from "./fish.js";
 import { nutritionPage, nutritionSections } from "./nutrition-guide.js";
 import { mountKitchenData, recipeNoteKey } from "./kitchen-data.js";
+import { recipeVersion } from "./recipe-versions.js";
 
 const shapes = {
   mark:'<path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
@@ -28,6 +29,7 @@ const shapes = {
   minus:'<path d="M5 12h14"/>',
   note:'<path d="M13 20H5V4h14v10l-6 6Zm0 0v-6h6M8 8h8M8 11h5"/>',
   copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+  grip:'<path stroke-linecap="round" stroke-width="2.5" d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01"/>',
   printer:'<path d="M7 7V3h10v4m0 10h4V8H3v9h4m0-4h10v8H7zm11-2h.01"/>',
   'chevron-left':'<path d="m15 5-7 7 7 7"/>',
   'chevron-right':'<path d="m9 5 7 7-7 7"/>'
@@ -88,6 +90,8 @@ let sauceCuisine = "All";
 let sauceQuery = "";
 let recipePortions = 1;
 let recipePortionLimit = 8;
+let displayedRecipe;
+let displayedVersion = "original";
 let plannedPortion;
 
 const recipeRoute = recipe => "#recipe/" + recipe.id;
@@ -348,14 +352,15 @@ function drawMeat(animal, active) {
   });
 }
 
-function nutrition(r) {
-  const [protein,carbs,fat,kcal] = estimatedNutrition(r).map(Math.round);
+function nutrition(estimate) {
+  const [protein,carbs,fat,kcal] = estimate.map(Math.round);
   return '<div class="macro-grid" aria-label="Estimated macros per serving">' +
     [[kcal,"Calories"],[protein + " g","Protein"],[carbs + " g","Carbs"],[fat + " g","Fat"]].map(([value,label]) => '<div><strong>' + value + '</strong><span>' + label + '</span></div>').join("") +
     '</div><p class="reference">Estimates per serving from typical ingredient values. Brands and substitutions vary. <a href="https://fdc.nal.usda.gov/">USDA FoodData Central</a></p>';
 }
 
 function recipeIngredients(r) {
+  if (r.displayItems) return r.displayItems;
   if (r.servings) return r.items;
   return r.items.map(([id,amount]) => [amount,ingredients[id][1],ingredients[id][0]]);
 }
@@ -391,11 +396,26 @@ function recipeNoteSection() {
   </section>`;
 }
 
+function cookingSection(r, version) {
+  const estimate = version === "original" ? estimatedNutrition(r) : estimatedVersionNutrition(r.displayItems,r.servings ?? 1);
+  return '<p class="recipe-description">' + r.desc + '</p><div class="recipe-meta">' + chip(duration(r.time) + (r.active ? " total" : ""),"clock") +
+    (r.active ? chip(duration(r.active) + " hands-on") : "") + chip(r.animal,"bowl") + '</div>' +
+    (estimate ? nutrition(estimate) : version === "fitness" ? '<p class="reference">Macro estimate unavailable for this version.</p>' : '') +
+    (version !== "original" && returnRoute === "plan" ? '<p class="reference recipe-plan-portion">The calendar uses Original recipe quantities.</p>' : '') +
+    '<div class="recipe-columns"><section data-recipe-ingredients>' + recipeIngredientSection(r) + '</section><section><h3>Method</h3><ol class="steps">' +
+    r.steps.map(step => '<li>' + step + '</li>').join("") +
+    '</ol>' + (r.servings ? '' : '<p class="reference">For larger batches, sear in batches to avoid crowding the pan.</p>') + '</section></div>';
+}
+
 function showRecipe(r) {
   const place = restaurants[r.restaurant];
   const byline = place ? place.name + " · " + place.place : r.origin ? r.origin + " · " + r.cuisine : r.cuisine;
-  recipeDialog.innerHTML = '<div class="recipe-cover">' + dishPhoto(r,false) + '<button class="icon-button" type="button" data-close aria-label="Close recipe">' + icon("x") + '</button></div><div class="recipe-content"><div class="eyebrow"><i></i> ' + byline.toUpperCase() + '</div><h2 id="recipe-title">' + r.name + '</h2><p>' + r.desc + '</p><div class="recipe-meta">' + chip(duration(r.time) + (r.active ? " total" : ""),"clock") + (r.active ? chip(duration(r.active) + " hands-on") : "") + chip(r.animal,"bowl") + '<button class="button light note-jump" type="button" data-jump-note aria-controls="personal-note">' + icon("note",16) + ' My notes</button></div>' + (estimatedNutrition(r) ? nutrition(r) : '') +
-    '<div class="recipe-columns"><section data-recipe-ingredients>' + recipeIngredientSection(r) + '</section><section><h3>Method</h3><ol class="steps">' + r.steps.map(step => '<li>' + step + '</li>').join("") + '</ol>' + (r.servings ? '' : '<p class="reference">For larger batches, sear in batches to avoid crowding the pan.</p>') + '</section></div>' + recipeNoteSection() +
+  displayedVersion = "original";
+  displayedRecipe = r;
+  const versionOptions = [["original","Original"],["restaurant","Restaurant-style"],["fitness","Fitness"]];
+  const versions = versionOptions.map(([value,label]) => '<button type="button" data-recipe-version="' + value + '" aria-pressed="' + (value === displayedVersion) + '" aria-controls="recipe-cooking">' + label + '</button>').join("");
+  recipeDialog.innerHTML = '<div class="recipe-cover">' + dishPhoto(r,false) + '<button class="icon-button" type="button" data-close aria-label="Close recipe">' + icon("x") + '</button></div><div class="recipe-content"><div class="eyebrow"><i></i> ' + byline.toUpperCase() + '</div><h2 id="recipe-title">' + r.name + '</h2><div class="recipe-toolbar"><div class="recipe-version-picker" role="group" aria-label="Recipe version">' + versions +
+    '</div><button class="button light note-jump" type="button" data-jump-note aria-controls="personal-note">' + icon("note",16) + ' My notes</button></div><div id="recipe-cooking">' + cookingSection(r,displayedVersion) + '</div>' + recipeNoteSection() +
     '<div class="recipe-notes"><div class="sage"><h3>Substitutions</h3><p>' + r.swap + '</p></div><div class="gold"><h3>Storage & reheating</h3><p>' + r.store +
     '</p><p>Chill within 2 hours, use within 3–4 days or freeze, and reheat cooked leftovers to 165°F / 74°C.</p></div></div>' + recipeSource(r) +
     (r.sauce ? '<a class="text-link recipe-sauce" href="#sauces/' + r.sauce + '">Related sauce calculator</a>' : '') + '</div>';
@@ -563,6 +583,13 @@ recipeDialog.addEventListener("input", event => {
   if (status.textContent !== message) status.textContent = message;
 });
 recipeDialog.addEventListener("click", event => {
+  const version = event.target.closest("[data-recipe-version]");
+  if (version && version.dataset.recipeVersion !== displayedVersion) {
+    displayedVersion = version.dataset.recipeVersion;
+    displayedRecipe = recipeVersion(recipeToOpen,displayedVersion,recipeIngredients(recipeToOpen));
+    for (const option of recipeDialog.querySelectorAll("[data-recipe-version]")) option.setAttribute("aria-pressed",String(option === version));
+    recipeDialog.querySelector("#recipe-cooking").innerHTML = cookingSection(displayedRecipe,displayedVersion);
+  }
   const button = event.target.closest("[data-jump-note], [data-copy-note]");
   if (!button) return;
   const note = recipeDialog.querySelector("#personal-note");
@@ -659,7 +686,7 @@ document.addEventListener("click", event => {
     if (d.adjust === "recipe") {
       recipePortions = Math.max(.5,Math.min(recipePortionLimit,recipePortions + step));
       const top = recipeDialog.scrollTop;
-      recipeDialog.querySelector("[data-recipe-ingredients]").innerHTML = recipeIngredientSection(recipeToOpen);
+      recipeDialog.querySelector("[data-recipe-ingredients]").innerHTML = recipeIngredientSection(displayedRecipe);
       recipeDialog.scrollTop = top;
     } else renderRoute(false);
     const parent = d.adjust === "recipe" ? recipeDialog : view;
