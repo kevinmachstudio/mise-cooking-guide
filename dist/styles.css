@@ -636,6 +636,25 @@ dialog::backdrop { background:#171e18a8; backdrop-filter:blur(4px); }
 .weekly-groceries-head p,.weekly-groceries [data-weekly-progress] { margin-top:4px; color:var(--muted); font-size:14px; }
 .weekly-groceries [data-weekly-progress] { margin-bottom:8px; }
 .weekly-groceries .grocery-item strong { max-width:15ch; }
+.planner-intro-actions,.swap-controls,.transfer-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; }
+.swap-controls { justify-content:space-between; align-items:end; }
+#swap-priority { max-width:100%; }
+#swap-options { max-height:32dvh; }
+#swap-options [aria-pressed="true"] { background:var(--sage); }
+.swap-preview { margin-top:12px; padding:12px; border:1px solid #d6dbca; border-radius:8px; background:#f1f3e7; }
+.swap-preview p,.transfer-section p,.transfer-actions p { color:var(--muted); font-size:.875rem; }
+.swap-preview .schedule-warning { color:#683e2b; }
+.swap-preview > .button { margin-top:9px; }
+.swap-changes { list-style:none; max-height:23dvh; overflow:auto; padding:0; margin:8px 0 0; }
+.swap-changes li { display:flex; flex-wrap:wrap; justify-content:space-between; gap:2px 10px; padding:5px 0; border-top:1px solid #d6dbca; font-size:.875rem; }
+#kitchen-data-dialog { width:min(520px,calc(100% - 24px)); padding:17px; }
+.transfer-section { display:grid; justify-items:start; gap:8px; padding-block:12px; border-top:1px solid var(--line); }
+.transfer-section p:empty,.transfer-actions p:empty { display:none; }
+.transfer-text { display:block; width:100%; padding:9px 10px; resize:vertical; border:1px solid #b4bba7; border-radius:7px; background:var(--white); color:var(--ink); font:inherit; }
+#share-week-text { margin-bottom:10px; }
+.backup-file { display:grid; gap:5px; width:100%; margin-top:5px; font-size:.875rem; font-weight:600; }
+.backup-file input { width:100%; }
+.backup-file input::file-selector-button { padding:6px 8px; margin-inline-end:8px; border:1px solid var(--line); border-radius:7px; background:var(--white); color:var(--ink); font:inherit; cursor:pointer; }
 .batch-note { font-weight:700; color:#526848; font-size:11px; line-height:1.2; }
 .leftover-picker { padding:7px 9px; border:1px solid #dce2d1; border-radius:7px; background:#f3f5ea; font-size:14px; }
 .leftover-picker summary { cursor:pointer; font-weight:700; }

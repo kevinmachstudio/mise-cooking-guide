@@ -2,11 +2,12 @@ import { pantry, sauces, recipes, ingredients, days, macros } from "./food.js";
 import { meats } from "./cuts.js";
 import { restaurants, restaurantRecipes } from "./restaurants.js";
 import { chineseRegions, regionalRecipes } from "./chinese-recipes.js";
-import { plannerPage, mountPlanner } from "./planner.js";
+import { plannerPage, mountPlanner, storedMeal } from "./planner.js";
 import { normalizeText, matchesText } from "./ingredient-match.js";
 import { templateRecipes, estimatedNutrition } from "./meal-templates.js";
 import { fish, fishGroups } from "./fish.js";
 import { nutritionPage, nutritionSections } from "./nutrition-guide.js";
+import { mountKitchenData, recipeNoteKey } from "./kitchen-data.js";
 
 const shapes = {
   mark:'<path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
@@ -61,7 +62,19 @@ const notice = text => {
   clearTimeout(notice.timeout);
   notice.timeout = setTimeout(() => toast.classList.remove("shown"), 2400);
 };
-const selected = Object.assign({}, read("week", {}));
+async function copyText(field, status, success = "Copied to clipboard.") {
+  try {
+    await navigator.clipboard.writeText(field.value);
+    if (field.isConnected && field.closest("dialog")?.open) status.textContent = success;
+  } catch {
+    if (!field.isConnected || !field.closest("dialog")?.open) return;
+    field.hidden = false;
+    field.focus();
+    field.select();
+    status.textContent = "Text selected. Use your device’s Copy command.";
+  }
+}
+let selected = Object.assign({}, read("week", {}));
 let portions = asCount(read("portions", 1), 8);
 let saucePortions = asCount(read("sauce-portions", 2));
 let weekTab = "week";
@@ -368,7 +381,6 @@ function recipeIngredientSection(r) {
 }
 
 const savedNoteStatus = "Notes save automatically in this browser.";
-const recipeNoteKey = recipe => "recipe-note-" + recipe.id;
 function recipeNoteSection() {
   return `<section class="personal-note" aria-labelledby="personal-note-title">
     <h3 id="personal-note-title"><label for="personal-note">My notes</label></h3>
@@ -516,7 +528,7 @@ function renderRoute(reset = false, requestedFocus = "") {
     markup = home();
   }
   view.innerHTML = markup;
-  if (route === "plan") mountPlanner(view.querySelector("#planner-page"), allRecipes, {icon, read, write, notice, recipeIngredients, recipeRoute, dishPhoto, duration, recipeContext, weekRecipes, numberLabel, measure});
+  if (route === "plan") mountPlanner(view.querySelector("#planner-page"), allRecipes, {icon, read, write, notice, recipeIngredients, recipeRoute, dishPhoto, duration, recipeContext, weekRecipes, numberLabel, measure, copyText});
   if (route === "sauces") view.querySelector("#sauce-search").value = sauceQuery;
   if (animal) drawMeat(animal,active);
   document.querySelectorAll(".bar nav a").forEach(link => {
@@ -550,7 +562,7 @@ recipeDialog.addEventListener("input", event => {
   const message = saved ? savedNoteStatus : "Couldn’t save in this browser. Copy your notes to keep them.";
   if (status.textContent !== message) status.textContent = message;
 });
-recipeDialog.addEventListener("click", async event => {
+recipeDialog.addEventListener("click", event => {
   const button = event.target.closest("[data-jump-note], [data-copy-note]");
   if (!button) return;
   const note = recipeDialog.querySelector("#personal-note");
@@ -560,16 +572,7 @@ recipeDialog.addEventListener("click", async event => {
     return;
   }
   const status = recipeDialog.querySelector("#personal-note-status");
-  try {
-    await navigator.clipboard.writeText(note.value);
-    if (!note.isConnected || !recipeDialog.open) return;
-    status.textContent = recipeDialog.dataset.draft === "true" ? "Copied. Your notes are still unsaved here." : "Copied to clipboard.";
-  } catch {
-    if (!note.isConnected || !recipeDialog.open) return;
-    note.focus();
-    note.select();
-    status.textContent = "Notes selected. Use your device’s Copy command.";
-  }
+  copyText(note,status,recipeDialog.dataset.draft === "true" ? "Copied. Your notes are still unsaved here." : undefined);
 });
 
 for (const dialog of [searchDialog, recipeDialog]) {
@@ -680,6 +683,16 @@ document.addEventListener("change", event => {
     const values = new Set(read(key,[]));
     if (input.checked) values.add(input.dataset.grocery); else values.delete(input.dataset.grocery);
     write(key,[...values]);
+  }
+});
+mountKitchenData({
+  read, recipes:allRecipes, storedMeal, icon, copyText,
+  onRestore() {
+    selected = Object.assign({},read("week",{}));
+    portions = asCount(read("portions",1),8);
+    saucePortions = asCount(read("sauce-portions",2));
+    renderRoute(false,"[data-kitchen-data]");
+    notice("Kitchen data restored");
   }
 });
 renderRoute(true);

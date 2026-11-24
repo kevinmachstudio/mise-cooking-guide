@@ -64,15 +64,33 @@ export function grocerySignature(item) {
   return JSON.stringify(item.units);
 }
 
+export const groceryQuantity = (item, measure) => item.units.map(([unit,amount]) => measure(amount,unit)).join(" + ");
+function groceryGroups(items) {
+  return [...aisleRules.map(([name]) => name),"Pantry & seasonings"]
+    .map(aisle => [aisle,items.filter(item => item.aisle === aisle)]).filter(([,list]) => list.length);
+}
+
+export function groceryText(items, checked, measure) {
+  return groceryGroups(items).map(([aisle,list]) => [
+    aisle,...list.map(item => (checked[item.key] === grocerySignature(item) ? "[x] " : "[ ] ") + item.name + " · " + groceryQuantity(item,measure))
+  ].join("\n")).join("\n\n");
+}
+
+export function groceryChanges(before, after) {
+  const prior = new Map(before.map(item => [item.key,item]));
+  const next = new Map(after.map(item => [item.key,item]));
+  return [...new Set([...prior.keys(),...next.keys()])].map(key => [prior.get(key),next.get(key)])
+    .filter(([a,b]) => !a || !b || grocerySignature(a) !== grocerySignature(b))
+    .sort(([a,b],[c,d]) => (b ?? a).name.localeCompare((d ?? c).name));
+}
+
 export function renderWeeklyGroceries(items, checked, measure) {
-  const aisles = [...aisleRules.map(([name])=>name),"Pantry & seasonings"];
   const completed = items.filter(item=>checked[item.key] === grocerySignature(item)).length;
   return items.length ? '<p data-weekly-progress aria-live="polite">' + completed + ' of ' + items.length + ' ingredients checked</p><div class="grocery-grid">' +
-    aisles.map(aisle=>{
-      const list = items.filter(item=>item.aisle === aisle);
-      return list.length ? '<section class="grocery-group"><h3>' + aisle + '</h3>' + list.map(item=>
+    groceryGroups(items).map(([aisle,list]) =>
+      '<section class="grocery-group"><h3>' + aisle + '</h3>' + list.map(item=>
         '<label class="grocery-item"><input type="checkbox" data-weekly-item="' + item.key + '"' + (checked[item.key] === grocerySignature(item) ? ' checked' : '') + '><span>' + item.name + '</span><strong>' +
-        item.units.map(([unit,amount])=>measure(amount,unit)).join(" + ") + '</strong></label>'
-      ).join("") + '</section>' : '';
-    }).join("") + '</div>' : '<p class="matcher-empty">Add a meal to this week to build your grocery list.</p>';
+        groceryQuantity(item,measure) + '</strong></label>'
+      ).join("") + '</section>'
+    ).join("") + '</div>' : '<p class="matcher-empty">Add a meal to this week to build your grocery list.</p>';
 }

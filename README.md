@@ -12,6 +12,10 @@ Open [localhost:8787](http://localhost:8787). The site needs no build step. The 
 
 Open **My notes** in a recipe to write personal cooking notes. Notes save automatically in that browser. **Copy notes** copies their plain text for pasting elsewhere.
 
+On **This Week**, use **Kitchen data** to copy all recipe notes or transfer saved data with a JSON backup. Restoring a backup keeps other local entries and gives the file priority where it supplies the same note, calendar slot, checklist, or setting.
+
+Use **Change → Quick swaps** on a planned meal to see faster, higher-protein, or ingredient-based alternatives and preview changes to weekly groceries. **Share week** copies the displayed plan and grocery checklist as text, including batch sizes and leftover sources.
+
 Weekday calendar slots use the lunch plan until edited. Weekly templates preview and apply a full week of meals with daily estimated protein and calories. The sauce calculator filters by style and use, and the seafood directory links to five recipes or transferable methods per fish.
 
 The Nutrition & Longevity guide links to primary studies and public-health guidance. Its hero uses a generated editorial photo of a Japanese-inspired lunch with tofu, greens, sweet potato, and noodles.
