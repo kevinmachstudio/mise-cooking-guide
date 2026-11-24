@@ -261,6 +261,7 @@ dialog::backdrop { background:#171e18a8; backdrop-filter:blur(4px); }
 .recipe-content h2 { font:400 clamp(39px,6vw,62px)/.91 var(--serif); letter-spacing:-.022em; margin:9px 0; }
 .recipe-content>p:not(.reference) { color:var(--muted); }
 .recipe-meta { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
+.recipe-meta .note-jump { margin-inline-start:auto; padding:5px 10px; }
 .macro-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; }
 .macro-grid div { display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--sage); border-radius:7px; padding:6px; }
 .macro-grid strong { font-size:18px; }
@@ -274,6 +275,11 @@ dialog::backdrop { background:#171e18a8; backdrop-filter:blur(4px); }
 .steps { list-style:decimal; margin:4px 0 0; padding-left:20px; font-size:14px; }
 .steps li { margin-bottom:8px; padding-left:3px; }
 .steps li::marker { color:#7a4b30; font-weight:700; }
+.personal-note { margin-top:17px; padding:13px 14px; border:1px solid #d8ddcb; border-radius:8px; background:#f1f3e7; }
+.personal-note textarea { display:block; width:100%; margin-block:6px 10px; padding:9px 10px; resize:vertical; border:1px solid #b4bba7; border-radius:7px; background:var(--white); color:var(--ink); font:inherit; }
+.personal-note-actions { display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; }
+.personal-note-actions p { color:var(--muted); font-size:.875rem; }
+.personal-note .draft-message { margin:9px 0 0; }
 .recipe-notes { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:17px; }
 .recipe-notes div { border-radius:7px; padding:11px 12px; }
 .recipe-notes p+p { margin-top:6px; }

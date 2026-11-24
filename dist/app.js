@@ -25,6 +25,8 @@ const shapes = {
   check:'<path d="m5 12 4 4L19 6"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
   minus:'<path d="M5 12h14"/>',
+  note:'<path d="M13 20H5V4h14v10l-6 6Zm0 0v-6h6M8 8h8M8 11h5"/>',
+  copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
   printer:'<path d="M7 7V3h10v4m0 10h4V8H3v9h4m0-4h10v8H7zm11-2h.01"/>',
   'chevron-left':'<path d="m15 5-7 7 7 7"/>',
   'chevron-right':'<path d="m9 5 7 7-7 7"/>'
@@ -42,7 +44,9 @@ const recipeDialog = document.querySelector("#recipe-dialog");
 const read = (key, fallback) => {
   try { return JSON.parse(localStorage.getItem("mise-" + key)) ?? fallback; } catch { return fallback; }
 };
-const write = (key, value) => { try { localStorage.setItem("mise-" + key, JSON.stringify(value)); } catch {} };
+const write = (key, value) => {
+  try { localStorage.setItem("mise-" + key, JSON.stringify(value)); return true; } catch { return false; }
+};
 const byId = (items, id) => items.find(item => item.id === id);
 const allRecipes = [...restaurantRecipes, ...regionalRecipes, ...recipes, ...templateRecipes];
 const recipeContext = recipe => restaurants[recipe.restaurant]?.name ?? recipe.origin ?? (recipe.template ? "Weekly templates" : "Lunch plan");
@@ -355,18 +359,38 @@ function recipeSource(r) {
     [...(r.menu ? [r.menu] : []), ...restaurants[r.restaurant].sources].map(([label,url]) => '<a href="' + url + '">' + label + '</a>').join("") + '</div></div>';
 }
 
+function recipeIngredientSection(r) {
+  const scale = recipePortions / (r.servings ?? 1);
+  const yieldNote = r.pieces ? '<p class="reference recipe-yield">Makes about ' + Math.round(r.pieces * scale) + ' pieces</p>' : '';
+  return '<div class="recipe-ingredients"><h3>Ingredients</h3><div class="count-control"><span>Servings</span>' + counter("recipe",recipePortions,recipePortionLimit,"servings") + '</div></div>' + yieldNote + '<ul class="measure-list">' +
+    recipeIngredients(r).map(([amount,unit,label]) => '<li><span>' + label + '</span><strong>' + measure(amount * scale,unit) + '</strong></li>').join("") +
+    '</ul>';
+}
+
+const savedNoteStatus = "Notes save automatically in this browser.";
+const recipeNoteKey = recipe => "recipe-note-" + recipe.id;
+function recipeNoteSection() {
+  return `<section class="personal-note" aria-labelledby="personal-note-title">
+    <h3 id="personal-note-title"><label for="personal-note">My notes</label></h3>
+    <textarea id="personal-note" rows="4" aria-describedby="personal-note-status" placeholder="What worked? What would you change next time?"></textarea>
+    <div class="personal-note-actions"><button class="button light" type="button" data-copy-note>${icon("copy",16)} Copy notes</button>
+    <p id="personal-note-status" role="status">${savedNoteStatus}</p></div>
+    <p class="draft-message" role="status" data-draft-message hidden>Copy your notes or try editing again. Your latest changes are still unsaved.</p>
+  </section>`;
+}
+
 function showRecipe(r) {
   const place = restaurants[r.restaurant];
-  const batchRecipe = !!r.servings;
-  const scale = recipePortions / (r.servings ?? 1);
   const byline = place ? place.name + " · " + place.place : r.origin ? r.origin + " · " + r.cuisine : r.cuisine;
-  const yieldNote = r.pieces ? '<p class="reference recipe-yield">Makes about ' + Math.round(r.pieces * scale) + ' pieces</p>' : '';
-  recipeDialog.innerHTML = '<div class="recipe-cover">' + dishPhoto(r,false) + '<button class="icon-button" type="button" data-close aria-label="Close recipe">' + icon("x") + '</button></div><div class="recipe-content"><div class="eyebrow"><i></i> ' + byline.toUpperCase() + '</div><h2 id="recipe-title">' + r.name + '</h2><p>' + r.desc + '</p><div class="recipe-meta">' + chip(duration(r.time) + (r.active ? " total" : ""),"clock") + (r.active ? chip(duration(r.active) + " hands-on") : "") + chip(r.animal,"bowl") + '</div>' + (estimatedNutrition(r) ? nutrition(r) : '') +
-    '<div class="recipe-columns"><section><div class="recipe-ingredients"><h3>Ingredients</h3><div class="count-control"><span>Servings</span>' + counter("recipe",recipePortions,recipePortionLimit,"servings") + '</div></div>' + yieldNote + '<ul class="measure-list">' +
-    recipeIngredients(r).map(([amount,unit,label]) => '<li><span>' + label + '</span><strong>' + measure(amount * scale,unit) + '</strong></li>').join("") +
-    '</ul></section><section><h3>Method</h3><ol class="steps">' + r.steps.map(step => '<li>' + step + '</li>').join("") + '</ol>' + (batchRecipe ? '' : '<p class="reference">For larger batches, sear in batches to avoid crowding the pan.</p>') + '</section></div><div class="recipe-notes"><div class="sage"><h3>Substitutions</h3><p>' + r.swap + '</p></div><div class="gold"><h3>Storage & reheating</h3><p>' + r.store +
+  recipeDialog.innerHTML = '<div class="recipe-cover">' + dishPhoto(r,false) + '<button class="icon-button" type="button" data-close aria-label="Close recipe">' + icon("x") + '</button></div><div class="recipe-content"><div class="eyebrow"><i></i> ' + byline.toUpperCase() + '</div><h2 id="recipe-title">' + r.name + '</h2><p>' + r.desc + '</p><div class="recipe-meta">' + chip(duration(r.time) + (r.active ? " total" : ""),"clock") + (r.active ? chip(duration(r.active) + " hands-on") : "") + chip(r.animal,"bowl") + '<button class="button light note-jump" type="button" data-jump-note aria-controls="personal-note">' + icon("note",16) + ' My notes</button></div>' + (estimatedNutrition(r) ? nutrition(r) : '') +
+    '<div class="recipe-columns"><section data-recipe-ingredients>' + recipeIngredientSection(r) + '</section><section><h3>Method</h3><ol class="steps">' + r.steps.map(step => '<li>' + step + '</li>').join("") + '</ol>' + (r.servings ? '' : '<p class="reference">For larger batches, sear in batches to avoid crowding the pan.</p>') + '</section></div>' + recipeNoteSection() +
+    '<div class="recipe-notes"><div class="sage"><h3>Substitutions</h3><p>' + r.swap + '</p></div><div class="gold"><h3>Storage & reheating</h3><p>' + r.store +
     '</p><p>Chill within 2 hours, use within 3–4 days or freeze, and reheat cooked leftovers to 165°F / 74°C.</p></div></div>' + recipeSource(r) +
     (r.sauce ? '<a class="text-link recipe-sauce" href="#sauces/' + r.sauce + '">Related sauce calculator</a>' : '') + '</div>';
+  const note = read(recipeNoteKey(r), "");
+  recipeDialog.querySelector("#personal-note").value = note;
+  recipeDialog.querySelector("[data-copy-note]").disabled = !note.trim();
+  recipeDialog.dataset.draft = "false";
   if (!recipeDialog.open) recipeDialog.showModal();
 }
 
@@ -515,6 +539,38 @@ window.addEventListener("hashchange", () => renderRoute(true));
 recipeDialog.addEventListener("close", () => {
   if (location.hash.startsWith("#recipe/") && !recipeDialog.open) location.hash = returnRoute;
 });
+recipeDialog.addEventListener("input", event => {
+  if (event.target.id !== "personal-note") return;
+  const value = event.target.value;
+  const saved = write(recipeNoteKey(recipeToOpen), value);
+  recipeDialog.dataset.draft = String(!saved);
+  recipeDialog.querySelector("[data-copy-note]").disabled = !value.trim();
+  if (saved) recipeDialog.querySelector("[data-draft-message]").hidden = true;
+  const status = recipeDialog.querySelector("#personal-note-status");
+  const message = saved ? savedNoteStatus : "Couldn’t save in this browser. Copy your notes to keep them.";
+  if (status.textContent !== message) status.textContent = message;
+});
+recipeDialog.addEventListener("click", async event => {
+  const button = event.target.closest("[data-jump-note], [data-copy-note]");
+  if (!button) return;
+  const note = recipeDialog.querySelector("#personal-note");
+  if (button.hasAttribute("data-jump-note")) {
+    note.scrollIntoView({block:"center"});
+    note.focus({preventScroll:true});
+    return;
+  }
+  const status = recipeDialog.querySelector("#personal-note-status");
+  try {
+    await navigator.clipboard.writeText(note.value);
+    if (!note.isConnected || !recipeDialog.open) return;
+    status.textContent = recipeDialog.dataset.draft === "true" ? "Copied. Your notes are still unsaved here." : "Copied to clipboard.";
+  } catch {
+    if (!note.isConnected || !recipeDialog.open) return;
+    note.focus();
+    note.select();
+    status.textContent = "Notes selected. Use your device’s Copy command.";
+  }
+});
 
 for (const dialog of [searchDialog, recipeDialog]) {
   dialog.addEventListener("click", event => {
@@ -600,7 +656,7 @@ document.addEventListener("click", event => {
     if (d.adjust === "recipe") {
       recipePortions = Math.max(.5,Math.min(recipePortionLimit,recipePortions + step));
       const top = recipeDialog.scrollTop;
-      showRecipe(recipeToOpen);
+      recipeDialog.querySelector("[data-recipe-ingredients]").innerHTML = recipeIngredientSection(recipeToOpen);
       recipeDialog.scrollTop = top;
     } else renderRoute(false);
     const parent = d.adjust === "recipe" ? recipeDialog : view;

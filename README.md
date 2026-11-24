@@ -10,6 +10,8 @@ python3 -m http.server 8787 --directory dist
 
 Open [localhost:8787](http://localhost:8787). The site needs no build step. The weekly calendar, submitted ingredient lists, lunch choices, portion counts, and grocery checkmarks are stored in the browser.
 
+Open **My notes** in a recipe to write personal cooking notes. Notes save automatically in that browser. **Copy notes** copies their plain text for pasting elsewhere.
+
 Weekday calendar slots use the lunch plan until edited. Weekly templates preview and apply a full week of meals with daily estimated protein and calories. The sauce calculator filters by style and use, and the seafood directory links to five recipes or transferable methods per fish.
 
 The Nutrition & Longevity guide links to primary studies and public-health guidance. Its hero uses a generated editorial photo of a Japanese-inspired lunch with tofu, greens, sweet potato, and noodles.
