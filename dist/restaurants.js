@@ -1,5 +1,6 @@
 import { chainRestaurants, chainRecipes } from "./chain-recipes.js";
 import { koiPalace, koiRecipes } from "./chinese-recipes.js";
+import { fusionRestaurants, fusionRecipes } from "./italian-fusion.js";
 
 const chronicle = ["Chronicle 2026 Bay Area Top 100", "https://www.sfchronicle.com/projects/2026/top-100-best-restaurants-san-francisco-bay-area/"];
 const dimSumGuide = ["2026 San Francisco Standard dim sum picks", "https://sfstandard.com/2026/04/25/best-dim-sum-san-francisco/"];
@@ -28,6 +29,7 @@ export const restaurants = {
     ["Lei’s cat’s-ear noodles · Resy interview", "https://blog.resy.com/2025/05/lei-wine-bar-nyc/"],
     ["2026 James Beard Award · Best New Restaurant", "https://web.jamesbeard.org/stories/james-beard-award-winners-2026"]]},
   ...chainRestaurants,
+  ...fusionRestaurants,
   "koi-palace":koiPalace
 };
 
@@ -240,5 +242,6 @@ export const restaurantRecipes = [
     store:"Chill the ragù and cooked noodles separately. The sauce freezes well. Reheat with a spoonful of water before tossing with the noodles."
   },
   ...chainRecipes,
-  ...koiRecipes
+  ...koiRecipes,
+  ...fusionRecipes
 ];

@@ -9,7 +9,8 @@ const markets = {
   lion:["Lion Market","https://lionsupermarket.us/locations","Bay Area Asian produce, Vietnamese cooking staples, and fresh seafood."],
   seafood:["Seafood City","https://seafoodcity.com/?redirectAfterStoreSelected=%2Fdepartment%2Fseafood","Filipino cooking staples, whole fish, and fresh seafood."],
   chavez:["Chavez Supermarket","https://www.chavezsuper.com/departments","Mexican produce, hand-cut meats, tortillas, and masa."],
-  india:["New India Bazar","https://www.newindiabazar.com/","South Asian vegetables, herbs, pulses, and spices."]
+  india:["New India Bazar","https://www.newindiabazar.com/","South Asian vegetables, herbs, pulses, and spices."],
+  markethall:["Market Hall Foods","https://www.markethallfoods.com/collections/cheese-charcuterie","Italian specialty cheese, cured meats, and pasta in Oakland."]
 };
 
 const categories = ["Vegetables & herbs","Meat & poultry","Fish & seafood","Tofu, noodles & pantry"];
@@ -108,7 +109,14 @@ export const groceryGuide = [
     ["Banana blossom","Filipino|Vietnamese|Thai","seafood lion","Look for fresh or canned blossom for salads and stews.","banana flower|puso ng saging"],
     ["Banana leaves","Filipino|Thai|Mexican|Indonesian","seafood lion chavez","Look in the freezer for pliable wrapping leaves to steam or grill."],
     ["Green papaya","Thai|Lao|Vietnamese|Filipino","lion seafood","Buy an unripe, firm fruit for shredding or simmering."],
-    ["Asian pears","Korean|Chinese|Taiwanese","hmart ranch","Look for a firm juicy pear to grate into bulgogi or galbi marinade.","asian pear|korean pear|nashi"]
+    ["Asian pears","Korean|Chinese|Taiwanese","hmart ranch","Look for a firm juicy pear to grate into bulgogi or galbi marinade.","asian pear|korean pear|nashi"],
+    ["Leeks","Japanese–Californian|Italian","joes ranch","Rinse sand from between layers. The pale bases char and braise well."],
+    ["Maitake mushrooms","Japanese|Cantonese–Californian","mitsuwa ranch","Look for feathery clusters that can be torn and browned.","hen of the woods|maitake"],
+    ["Chanterelle mushrooms","Italian|Japanese–Italian fusion","joes","Check the seasonal mushroom case. Oyster mushrooms are a good alternative.","chanterelles"],
+    ["Fresh basil","Italian","joes costco","Use sweet basil for pasta alla Norma or tear it over tomato dishes.","sweet basil"],
+    ["Flat-leaf parsley","Italian|Italian American|Levantine","joes chavez","Choose crisp leaves for piccata, bean soup, and herb sauces.","italian parsley|parsley"],
+    ["Fresh thyme","Italian|California-style","joes","Strip the small leaves from the woody stems for mushroom ragù.","fresh thyme leaves"],
+    ["Tuscan kale","Italian","joes costco","Look for dark, bumpy leaves for ribollita and bean soups.","cavolo nero|lacinato kale|dinosaur kale"]
   ]),
   ...entries(categories[1],[
     ["Chicken breast, boneless and skinless","Vietnamese|Chinese American|Mexican|Meal prep","costco joes","Ask for cutlets or halve thick breasts for fast, even searing.","raw boneless skinless chicken breast|chicken breast|chicken breasts"],
@@ -156,13 +164,17 @@ export const groceryGuide = [
     ["Lamb shoulder","Indian|Levantine|Persian","costco","Choose shoulder for long-simmered curries and braises."],
     ["Goat stew meat","Mexican|Indian|Filipino","chavez","Ask for bone-in pieces for birria, curried goat, or kaldereta.","cabrito|goat"],
     ["Eggs","Chinese|Japanese|Korean|Vietnamese|Mexican|Meal prep","costco joes","Check size before measuring for dumplings, custards, or a breakfast skillet.","large eggs|large eggs without shells"],
-    ["Liquid egg whites","Meal prep","costco joes","Use the carton weight to portion skillet dishes or scrambles."]
+    ["Liquid egg whites","Meal prep","costco joes","Use the carton weight to portion skillet dishes or scrambles."],
+    ["Italian sausage","Italian|Italian American","joes costco","Choose mild fennel sausage for polenta or hot sausage for additional chile.","raw italian pork sausage|raw italian turkey sausage"],
+    ["Pancetta","Italian|Japanese–Italian fusion","markethall joes","Ask for a thick slice when you need cubes for ragù or tomato sauce."],
+    ["Guanciale","Italian|Japanese–Italian fusion","markethall","Ask a specialty deli counter for cured pork jowl. Pancetta works in the yuba recipe."],
+    ["Ground duck","Japanese–Californian","ranch hmart","Ask at the butcher counter or grind boneless duck yourself for dumplings."]
   ]),
   ...entries(categories[2],[
     ["Salmon fillets","Japanese|California-style|Meal prep","costco joes mitsuwa","Choose even fillets and skin-on pieces if you want a crisp sear.","raw salmon fillet|salmon|salmon fillet"],
     ["Cod fillets","Cantonese & Hong Kong|Korean|Mexican|California-style","costco joes ranch","Thicker fillets suit steaming and hot pot. Smaller pieces work for tacos.","skinless cod|skinless cod fillets|skinless cod or sea bass fillets|cod"],
     ["Sea bass","Cantonese & Hong Kong|Chinese|California-style","ranch costco","Ask which species is being sold and whether you want fillets or a whole fish.","black sea bass|skinless sea bass fillets"],
-    ["Black cod","Japanese|California-style","mitsuwa ranch","Buy thick pieces for miso broiling. This rich fish is also sold as sablefish.","sablefish|gindara"],
+    ["Black cod","Japanese|California-style|Japanese–Californian","mitsuwa ranch","Buy thick pieces for steaming or miso broiling. This rich fish is also sold as sablefish.","black cod fillets|sablefish|gindara"],
     ["Mackerel","Japanese|Korean|Filipino","mitsuwa hmart seafood","Choose whole fish or fillets for grilling. Check whether packages are salted.","saba|saengseon godeungeo"],
     ["Yellowtail","Japanese|California-style","mitsuwa ranch","Ask for fillets or collars. The fatty collar works well under a broiler.","hamachi|buri"],
     ["Yellow croaker","Korean|Chinese","hmart ranch","Choose similar-sized fish so they cook evenly when pan-fried.","jogi|yellow corvina"],
@@ -224,7 +236,23 @@ export const groceryGuide = [
     ["Rice vinegar","Chinese|Japanese|Korean|Vietnamese","ranch mitsuwa hmart","Buy unseasoned when a recipe gives its own salt and sugar amounts."],
     ["Toasted sesame oil","Chinese|Korean|Japanese","ranch hmart mitsuwa","Look for toasted oil for finishing or marinades."],
     ["Cornstarch","Chinese|Cantonese & Hong Kong|Chinese American","ranch costco","Use to velvet meat, thicken a sauce, or crisp a coating."],
-    ["Greek yogurt","Meal prep|Levantine|Persian","costco joes","Plain yogurt works in savory sauces and breakfast bowls.","plain nonfat greek yogurt"]
+    ["Greek yogurt","Meal prep|Levantine|Persian","costco joes","Plain yogurt works in savory sauces and breakfast bowls.","plain nonfat greek yogurt"],
+    ["Polenta cornmeal","Italian","joes costco","Choose medium-grind yellow cornmeal for creamy stove-cooked polenta.","medium-grind polenta cornmeal|cornmeal"],
+    ["Cooked tube polenta","Italian","joes","Look for plain ready-to-slice polenta for quick crisp rounds.","ready-made polenta"],
+    ["Cannellini beans","Italian|Japanese–Italian fusion","joes costco","Use drained canned beans for ribollita, mushroom ragù, or pasta.","cooked cannellini beans|white kidney beans"],
+    ["Cranberry beans","Italian|Cantonese–Californian","joes","Ask for borlotti where specialty beans are stocked. Pinto beans are an easier swap.","cooked cranberry beans|borlotti"],
+    ["Dry tagliatelle","Italian","joes","Wide egg pasta ribbons hold thick meat ragù. Pappardelle is another option.","fresh tagliatelle|tagliatelle"],
+    ["Dry rigatoni","Italian","joes costco","Look for ridged tubes that catch tomato sauce.","dry whole-wheat rigatoni|rigatoni"],
+    ["Parmesan","Italian|Italian American","joes costco","Buy a wedge to shave or grate over pasta and polenta.","grated parmesan|parmigiano reggiano"],
+    ["Ricotta salata","Italian","markethall","Ask the specialty cheese counter for the firm salted ricotta used in pasta alla Norma."],
+    ["Pecorino Romano","Italian|Japanese–Italian fusion","joes costco","Use a salty sheep’s milk cheese to finish tomato sauces.","grated pecorino romano"],
+    ["Capers","Italian American|Italian","joes","Look for small brined capers for piccata or tomato sauces."],
+    ["Tomato passata","Italian","joes","Choose a plain smooth strained tomato purée for ragù.","strained tomatoes"],
+    ["Dried yuba sheets","Japanese|Chinese|Japanese–Italian fusion","mitsuwa ranch","Ask for flat tofu-skin sheets if you want to cut broad ribbons."],
+    ["Gyoza wrappers","Japanese|Japanese–Californian","mitsuwa ranch","Choose thin round wrappers from the refrigerated or frozen case."],
+    ["Yuzu juice","Japanese|Japanese–Californian","mitsuwa","Check for unsweetened bottled yuzu juice in the dressing or citrus aisle."],
+    ["Unsalted dashi","Japanese|Japanese–Californian","mitsuwa ranch","Compare sodium if buying prepared dashi, or buy kombu to make a plain broth."],
+    ["Ají amarillo paste","Japanese–Peruvian","chavez","Try a Latin market’s Peruvian foods shelf and check the label for added salt or oil.","aji amarillo|peruvian yellow chile paste"]
   ])
 ];
 
@@ -234,6 +262,7 @@ for (const item of groceryGuide) {
 }
 
 export function cuisineForGroceries(cuisine) {
+  if (cuisine.includes("–")) return cuisine;
   if (/cantonese|hong kong/i.test(cuisine)) return "Cantonese & Hong Kong";
   if (/chinese american/i.test(cuisine)) return "Chinese American";
   if (/chinese|shanghainese|sichuanese|xinjiang/i.test(cuisine)) return "Chinese";

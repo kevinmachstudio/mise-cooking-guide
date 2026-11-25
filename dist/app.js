@@ -10,6 +10,7 @@ import { nutritionPage, nutritionSections } from "./nutrition-guide.js";
 import { favoriteRecipesKey, mountKitchenData, recipeNoteKey } from "./kitchen-data.js";
 import { recipeVersion } from "./recipe-versions.js";
 import { groceryGuide, groceryGuidePage, mountGroceryGuide } from "./grocery-guide.js";
+import { italianRecipes } from "./italian-fusion.js";
 
 const shapes = {
   mark:'<path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
@@ -53,7 +54,7 @@ const write = (key, value) => {
   try { localStorage.setItem("mise-" + key, JSON.stringify(value)); return true; } catch { return false; }
 };
 const byId = (items, id) => items.find(item => item.id === id);
-const allRecipes = [...restaurantRecipes, ...regionalRecipes, ...recipes, ...templateRecipes];
+const allRecipes = [...restaurantRecipes, ...regionalRecipes, ...italianRecipes, ...recipes, ...templateRecipes];
 const favoriteIds = () => new Set(read(favoriteRecipesKey, []));
 const recipeContext = recipe => restaurants[recipe.restaurant]?.name ?? recipe.origin ?? (recipe.template ? "Weekly templates" : "Lunch plan");
 const pantryIndex = pantry.flatMap(p => p.staples.map(([name,desc,swap],index) => ({
@@ -99,11 +100,11 @@ let plannedPortion;
 let refreshPlannerShelf;
 
 const recipeRoute = recipe => "#recipe/" + recipe.id;
-const dishPhoto = (recipe, lazy = true, alt = recipe.name) => '<img src="assets/' + (recipe.image ?? recipe.id) + '.webp" alt="' + alt + '"' + (lazy ? ' loading="lazy"' : '') + '>';
+const dishPhoto = (recipe, lazy = true, alt = recipe.name) => '<img src="assets/' + (recipe.image ?? recipe.id) + '.' + (recipe.imageExt ?? "webp") + '" alt="' + alt + '"' + (lazy ? ' loading="lazy"' : '') + '>';
 const dayOptions = index => recipes.filter(recipe => recipe.day === index);
 const weekRecipes = () => days.map((_, index) => dayOptions(index).find(recipe => recipe.id === selected[index]) ?? dayOptions(index)[0]);
 const typeLinks = [
-  ["restaurants","bowl","Recipe library","Restaurant favorites, dim sum, and regional Chinese cooking.","fern"],
+  ["restaurants","bowl","Recipe library","Restaurant favorites, Italian classics, regional Chinese, and Asian fusion.","fern"],
   ["pantry","jar","Pantry staples","The ingredients that build a cuisine.","sage"],
   ["sauces","whisk","Sauce calculator","Easy sauces, scaled to your table.","peach"],
   ["lunches","bowl","5-day lunch plan","Ten high-protein recipes to mix and match.","gold"],
@@ -263,19 +264,24 @@ function refreshFavorites() {
 }
 
 function restaurantPage(filter, region) {
-  const filters = [["all","All recipes"],["favorites","Favorites"],["bay","Bay Area"],["dim-sum","Dim sum"],["china","Regional Chinese"],["chains","Chain favorites"],["prep","Meal prep"],["us","Elsewhere in the U.S."],["asia","Across Asia"]];
+  const filters = [["all","All recipes"],["favorites","Favorites"],["italian","Italian"],["fusion","Asian fusion"],["bay","Bay Area"],["dim-sum","Dim sum"],["china","Regional Chinese"],["chains","Chain favorites"],["prep","Meal prep"],["us","Elsewhere in the U.S."],["asia","Across Asia"]];
   const active = filters.some(([id]) => id === filter) ? filter : "all";
   const activeRegion = Object.hasOwn(chineseRegions,region) ? region : "all";
   const favorites = favoriteIds();
   const showingFavorites = active === "favorites";
   const visible = showingFavorites ? savedRecipes(favorites) : allRecipes.filter(r => {
     const place = restaurants[r.restaurant];
-    return active === "all" || place?.area === active || (active === "dim-sum" && r.dimSum) || (active === "prep" && (r.template || Number.isInteger(r.day))) ||
+    return active === "all" || r.collection === active || place?.area === active || (active === "dim-sum" && r.dimSum) || (active === "prep" && (r.template || Number.isInteger(r.day))) ||
       (active === "chains" && place?.chain) || (active === "china" && r.region && (activeRegion === "all" || activeRegion === r.region));
   });
   const regionFilters = active === "china" ? '<div class="pills recipe-region-filters" aria-label="Filter Chinese recipes by region">' + [["all","All regions"],...Object.entries(chineseRegions)].map(([id,label]) =>
     '<a href="#restaurants/china' + (id === "all" ? "" : "/" + id) + '"' + (activeRegion === id ? ' aria-current="page"' : '') + '>' + label + '</a>').join("") + '</div>' : "";
-  return sectionIntro("Recipes", showingFavorites ? "Favorites" : "Recipe library", showingFavorites ? "Your saved recipes." : "Cook Bay Area favorites, Chinese regional classics, and quick lunches.", showingFavorites ? "heart" : "bowl") +
+  const [title,description] = {
+    favorites:["Favorites","Your saved recipes."],
+    italian:["Italian recipes","Polenta, pasta, and regional Italian dishes."],
+    fusion:["Asian fusion","Home adaptations inspired by dishes from the Bay Area and beyond."]
+  }[active] ?? ["Recipe library","Browse restaurant favorites, regional classics, and quick lunches."];
+  return sectionIntro("Recipes",title,description,showingFavorites ? "heart" : "bowl") +
     '<section class="wrap page-body"><div class="restaurant-controls"><div class="pills" aria-label="Filter recipes">' +
     filters.map(([id,label]) => '<a href="#restaurants' + (id === "all" ? "" : "/" + id) + '" ' + (active === id ? 'aria-current="page"' : '') + '>' + label + '</a>').join("") +
     '</div><p' + (showingFavorites ? ' data-favorite-count role="status"' : '') + '>' + recipeCount(visible.length) + '</p></div>' + regionFilters +
@@ -416,7 +422,7 @@ function recipeSource(r) {
     return '<div class="recipe-inspiration"><h3>' + chineseRegions[r.region] + '</h3><p>' + r.inspiration + ' This is a Mise home-kitchen adaptation.</p><div class="recipe-source-links"><a href="' + r.reference[1] + '">' + r.reference[0] + '</a></div></div>';
   }
   if (!r.restaurant) {
-    return '<div class="related source-note"><p>The bowl and its macros are Mise adaptations. See the original recipe for the published preparation.</p><a class="text-link" href="' + r.source[2] + '">' + r.source[1] + ' · ' + r.source[0] + ' ' + icon("arrow-up",15) + '</a></div>';
+    return '<div class="related source-note"><p>This recipe is a Mise home-kitchen adaptation.</p><a class="text-link" href="' + r.source[2] + '">' + r.source[1] + ' · ' + r.source[0] + ' ' + icon("arrow-up",15) + '</a></div>';
   }
   return '<div class="recipe-inspiration"><h3>Restaurant inspiration</h3><p>' + r.inspiration + ' This is a Mise home-kitchen adaptation.</p><div class="recipe-source-links">' +
     [...(r.menu ? [r.menu] : []), ...restaurants[r.restaurant].sources].map(([label,url]) => '<a href="' + url + '">' + label + '</a>').join("") + '</div></div>';
@@ -475,11 +481,14 @@ const entries = [
   ...nutritionSections.map(item=>({title:item.label,kind:"Guide",link:"#nutrition" + (item.id === "basics" ? "" : "/" + item.id),desc:item.description,terms:item.terms})),
   {title:"This Week", kind:"Planner", link:"#plan", desc:"Weekly meal calendar", terms:"schedule breakfast lunch dinner recipe ingredient match what can i cook"},
   {title:"Favorites", kind:"Recipes", link:"#restaurants/favorites", desc:"Your saved recipes", terms:"bookmarks favorites saved marked"},
+  {title:"Italian recipes", kind:"Recipes", link:"#restaurants/italian", desc:"Polenta, pasta, Tuscan soup, and more", terms:"italian regional cooking"},
+  {title:"Asian fusion", kind:"Recipes", link:"#restaurants/fusion", desc:"Home adaptations from notable restaurants", terms:"fine dining nikkei bay area asian fusion"},
   {title:"Grocery guide", kind:"Guide", link:"#pantry/groceries", desc:"Vegetables, meats, seafood, and where to shop", terms:"shopping markets grocery stores where to buy"},
   ...recipes.map(r => ({title:r.name, kind:"Recipe", link:recipeRoute(r), desc:r.cuisine + " · " + r.time + " min · " + macros(r)[0] + " g protein", terms:r.items.map(([id]) => ingredients[id][0]).join(" ")})),
   ...templateRecipes.map(r => ({title:r.name,kind:"Recipe",link:recipeRoute(r),desc:"Weekly templates · " + Math.round(r.nutrition[0]) + " g protein",terms:[r.cuisine,r.animal,...r.items.map(([, ,label])=>label)].join(" ")})),
-  ...restaurantRecipes.map(r => ({title:r.name, kind:"Recipe", link:recipeRoute(r), desc:restaurants[r.restaurant].name + " · " + restaurants[r.restaurant].place + " · " + duration(r.time), terms:[r.inspiration,r.cuisine,r.animal,r.dimSum ? "dim sum yum cha" : "",...recipeIngredients(r).map(([, ,label]) => label)].join(" ")})),
+  ...restaurantRecipes.map(r => ({title:r.name, kind:"Recipe", link:recipeRoute(r), desc:restaurants[r.restaurant].name + " · " + restaurants[r.restaurant].place + " · " + duration(r.time), terms:[r.inspiration,r.cuisine,r.animal,r.dimSum ? "dim sum yum cha" : "",r.collection === "fusion" ? "asian fusion" : "",...recipeIngredients(r).map(([, ,label]) => label)].join(" ")})),
   ...regionalRecipes.map(r => ({title:r.name, kind:"Recipe", link:recipeRoute(r), desc:r.origin + " · " + duration(r.time), terms:[r.inspiration,r.cuisine,r.animal,"regional Chinese",chineseRegions[r.region],r.dimSum ? "dim sum yum cha" : "",...recipeIngredients(r).map(([, ,label]) => label)].join(" ")})),
+  ...italianRecipes.map(r => ({title:r.name,kind:"Recipe",link:recipeRoute(r),desc:r.origin + " · " + duration(r.time),terms:[r.desc,r.cuisine,r.animal,...r.items.map(([, ,label]) => label)].join(" ")})),
   ...sauces.map(s => ({title:s.name, kind:"Sauce", link:"#sauces/" + s.id, desc:s.cuisine + " · " + sauceUses[s.use] + " · " + s.time + " min", terms:s.items.map(([name]) => name).join(" ") + " " + s.use})),
   ...pantryIndex.map(({name,desc,swap,cuisine,link}) => ({title:name,kind:"Pantry",link,desc:cuisine + " pantry · " + desc,terms:swap})),
   ...groceryGuide.map(item => ({title:item.name,kind:"Grocery",link:"#pantry/groceries/" + normalizeText(item.name).replaceAll(" ","-"),desc:item.category + " · " + item.tip,terms:item.aliases.join(" ")})),
@@ -528,7 +537,8 @@ function renderRoute(reset = false, requestedFocus = "") {
     const r = byId(allRecipes,id);
     if (r) {
       if (!currentRoute) {
-        history.replaceState(null,"",r.region ? "#restaurants/china/" + r.region : r.restaurant ? "#restaurants" : "#lunches");
+        const collectionRoute = r.collection ? "#restaurants/" + r.collection : null;
+        history.replaceState(null,"",collectionRoute ?? (r.region ? "#restaurants/china/" + r.region : r.restaurant ? "#restaurants" : "#lunches"));
         renderRoute(true);
         history.replaceState(null,"",recipeRoute(r));
       }
@@ -608,6 +618,8 @@ function renderRoute(reset = false, requestedFocus = "") {
   });
   document.title = ({"plan":"This Week — Mise","home":"Mise — The home cook’s field guide","restaurants":"Recipe library — Mise","pantry":"Pantry staples — Mise","sauces":"Sauce calculator — Mise","lunches":"5 Days of High-Protein Asian Lunches — Mise","meat":"Meat & cuts — Mise","nutrition":"Nutrition & longevity — Mise"})[route];
   if (route === "restaurants" && id === "favorites") document.title = "Favorites — Mise";
+  if (route === "restaurants" && id === "italian") document.title = "Italian recipes — Mise";
+  if (route === "restaurants" && id === "fusion") document.title = "Asian fusion — Mise";
   if (route === "pantry" && id === "groceries") document.title = "Grocery guide — Mise";
   if (requestedFocus) view.querySelector(requestedFocus)?.focus({preventScroll:true});
   if (restoringRecipe) {

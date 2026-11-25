@@ -40,4 +40,6 @@ The restaurant collection links to menus, restaurant reporting, and 2026 dining 
 
 The cookbook-style images in `dist/assets/` also illustrate the California Fish Grill and Panda Express dishes, Koi Palace dim sum, and mainland Chinese and Hong Kong recipes.
 
+The Italian and Asian fusion collections cite culinary references, menus, or chef interviews on each recipe. Their JPEG photos use two ImageGen cookbook contact sheets, with warm rustic Italian plating and California-style restaurant plating for the home adaptations.
+
 The built-in image generator produced an overhead editorial photo of soy-glazed chicken, rice, edamame, and purple cabbage on a dark table, plus a nine-photo grid of the other lunch dishes. The individual WebP images are in `dist/assets/`.

@@ -19,10 +19,10 @@ const aliases = [
 ];
 
 const aisleRules = [
-  ["Meat, seafood & eggs", /^(?:raw |cooked |skinless |boneless |lean |bone in |ground |large )*(?:chicken thighs?|chicken breast|chicken cutlets?|ground chicken|turkey breast|turkey|pork|beef|steak|flank steak|sirloin|filet mignon|oxtail|salmon|shrimp|crab|lobster|cod|sea bass|lamb|eggs?|liquid egg whites)\b/],
-  ["Produce & frozen vegetables", /\b(?:broccoli|carrots?|scallions?|onions?|shallots?|ginger|garlic|lemongrass|cabbage|spinach|kale|watercress|lettuce|cucumbers?|zucchini|peppers?|jalapeno|chile|chiles|cilantro|mint|basil|daikon|shiitake|eggplant|potatoes|squash|avocado|edamame|peas|green beans|corn kernels|sprouts|berries|lime|lemon|orange|pear)\b/],
-  ["Dairy & tofu", /\b(?:yogurt|milk|butter|mozzarella|tofu|whey)\b/],
-  ["Grains, noodles & beans", /\b(?:rice|noodles|quinoa|oats|tortillas|black beans|lentils|wonton wrappers)\b/]
+  ["Meat, seafood & eggs", /^(?:raw |cooked |skinless |boneless |lean |bone in |ground |large )*(?:chicken thighs?|chicken breast|chicken cutlets?|ground chicken|turkey breast|turkey|pork|beef|steak|flank steak|sirloin|filet mignon|oxtail|salmon|shrimp|crab|lobster|black cod|cod|sea bass|lamb|duck|pancetta|guanciale|italian (?:pork|turkey) sausage|eggs?|liquid egg whites)\b/],
+  ["Produce & frozen vegetables", /\b(?:broccoli|carrots?|scallions?|onions?|shallots?|ginger|garlic|lemongrass|cabbage|spinach|kale|watercress|lettuce|cucumbers?|zucchini|peppers?|jalapeno|chile|chiles|cilantro|mint|basil|daikon|shiitake|eggplant|potatoes|squash|avocado|edamame|peas|green beans|corn kernels|sprouts|berries|lime|lemon|orange|pear|leeks|mushrooms|thyme|parsley|celery|ripe tomatoes)\b/],
+  ["Dairy & tofu", /\b(?:yogurt|milk|butter|mozzarella|tofu|whey|parmesan|pecorino|ricotta|heavy cream)\b/],
+  ["Grains, noodles & beans", /\b(?:rice|noodles|quinoa|oats|tortillas|black beans|cannellini beans|cranberry beans|lentils|wonton wrappers|gyoza wrappers|tagliatelle|rigatoni|polenta|bread)\b/]
 ];
 const pantryWords = /\b(?:sauce|stock|broth|flakes|seeds|ground black pepper|ground white pepper|dried chile|juice|zest|oil|vinegar|starch|flour|paste|wine|sesame|salt|sugar|syrup|dried shrimp|dried mushrooms|coconut milk|fermented black beans|kombu)\b/;
 

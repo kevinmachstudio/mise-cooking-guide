@@ -433,6 +433,114 @@ export const recipeVersions = {
       0:"Cream butter and powdered sugar. Beat in one-quarter of the whisked eggs, then mix in flour just until a dough forms. Chill 20 minutes, then press the dough in a thin, even layer into the same number of tart tins.",
       1:"Dissolve the measured granulated sugar in hot water and cool it. Whisk in the remaining eggs, evaporated milk, and vanilla, then strain through a fine sieve."
     })
+  ],
+  "parmesan-polenta-mushroom-ragu": [
+    version(55,"Extra-creamy Parmesan polenta and mushrooms browned in small batches.",{"unsalted butter":45,"grated parmesan":80,"mixed cremini":600,"dry red wine":110},{
+      3:"Off the heat, whisk the butter and most of the Parmesan into the hot polenta. Spoon the ragù over it, reserving a few well-browned mushrooms for the top. Finish with the remaining cheese."
+    }),
+    version(50,"A smaller base of polenta with more mushrooms and white beans.",{"medium-grind":135,"water":670,"fine salt":.75,"mixed cremini":575,"extra-virgin":1,"unsalted butter":10,"grated parmesan":40},{
+      2:"Deglaze the skillet with wine. Add browned mushrooms, drained beans, stock, thyme, and remaining salt. Reduce until the ragù coats a spoon and the beans are heated through."
+    },[[270,"g","Cooked cannellini beans, drained"]])
+  ],
+  "crispy-polenta-sausage-rapini": [
+    version(40,"Crunchy, deeply golden polenta with fennel sausage and extra Parmesan.",{"cooked tube":560,"raw italian":430,"extra-virgin":3,"grated parmesan":45},{
+      1:"Heat half the oil and brown polenta in batches until each side forms a crust. Rest pieces on a rack and shave some Parmesan over while hot.",
+      3:"Sauté garlic and chile flakes in the remaining oil, then toss in the broccoli rabe and browned sausage. Finish with lemon and spoon over the crisp polenta and remaining Parmesan."
+    }),
+    version(35,"Lean turkey sausage, additional greens, and a smaller portion of polenta.",{"cooked tube":360,"raw italian":[390,"g","Raw Italian turkey sausage"],"broccoli rabe":500,"extra-virgin":1,"grated parmesan":20},{
+      2:`Brown the turkey sausage in a nonstick skillet, breaking it up and checking it reaches ${chicken}. Transfer to a plate before finishing the greens.`
+    })
+  ],
+  "pasta-alla-norma": [
+    version(50,"Skillet-fried eggplant and a generous ricotta salata finish.",{"globe eggplant":680,"extra-virgin":5,"ricotta salata":90},{
+      0:"Dice the eggplant, season with some salt, and pat dry. Use most of the oil to fry it in uncrowded batches over medium-high until golden and tender. Drain on a rack."
+    }),
+    version(45,"Roasted eggplant, white beans, and a smaller portion of whole-wheat rigatoni.",{"globe eggplant":700,"extra-virgin":1.5,"dry rigatoni":[240,"g","Dry whole-wheat rigatoni"],"ricotta salata":35},{
+      2:"Cook the whole-wheat pasta until al dente. Warm the drained beans in the tomato sauce. Toss the drained pasta and most of the eggplant with the sauce and a splash of reserved pasta water."
+    },[[260,"g","Cooked cannellini beans, drained"]])
+  ],
+  "lemon-chicken-piccata": [
+    version(35,"Golden cutlets with a more concentrated wine, lemon, and butter sauce.",{"unsalted chicken stock":150,"unsalted butter":50,"capers":3},{
+      2:"Deglaze the skillet with wine and reduce by about half. Add stock, lemon, and capers and simmer until lightly syrupy. Remove from the heat and whisk in cold butter a few pieces at a time."
+    },[[60,"mL","Dry white wine"]]),
+    version(30,"Seared chicken with a lighter lemon-caper sauce and extra broccoli.",{"chicken breast":650,"all-purpose":20,"extra-virgin":1,"unsalted butter":12},{
+      3:"Steam the broccoli until crisp-tender. Return the chicken to coat with the sauce, then serve over broccoli with the chopped parsley."
+    },[[400,"g","Broccoli florets"]])
+  ],
+  "tuscan-ribollita": [
+    version(70,"A thick twice-simmered soup finished with olive oil and crunchy bread.",{"extra-virgin":3,"day-old":155},{
+      2:"Tear most of the bread into the soup, rest off heat for 10 minutes, and bring it back to a simmer. Toast the remaining bread in a little of the measured olive oil until crisp.",
+      3:"Ladle into bowls and finish with toasted bread and the remaining olive oil."
+    }),
+    version(60,"More cannellini and kale, with enough bread to thicken each bowl.",{"extra-virgin":1,"cooked cannellini":650,"tuscan kale":300,"day-old":70,"unsalted vegetable stock":800},{
+      1:"Mash a generous ladle of beans into the stock for body. Simmer with the whole beans and chopped kale until tender, adding the kale in handfuls if needed."
+    })
+  ],
+  "tagliatelle-bolognese": [
+    version(195,"A deeply browned beef and pancetta ragù with fresh tagliatelle.",{"ground beef":400,"pancetta":120,"whole milk":140,"dry tagliatelle":[430,"g","Fresh tagliatelle"],"grated parmesan":50},{
+      2:"Simmer the meat sauce for at least 2½ hours, adding stock a little at a time so it stays moist. Finish with the milk near the end and reduce until thick.",
+      3:"Boil the fresh tagliatelle just until tender. Toss vigorously with the ragù and a splash of cooking water, then finish with Parmesan."
+    }),
+    version(165,"Lean beef, extra mushrooms, and a smaller portion of pasta.",{"ground beef":[425,"g","Lean ground beef"],"pancetta":45,"dry tagliatelle":240,"grated parmesan":25},{
+      1:`Brown the lean beef and minced mushrooms in the pot until released moisture evaporates and the beef reaches ${ground}. Add tomato paste, then wine, and reduce before adding the passata.`
+    },[[200,"g","Cremini mushrooms"]])
+  ],
+  "benu-lobster-soup-dumplings": [
+    version(215,"Lobster-forward dumplings with a little more soup and a ginger-vinegar dip.",{"unsalted seafood stock":165,"unflavored":6,"raw lobster":215,"raw shrimp":80,"chinkiang":3},{
+      3:`Steam with space between dumplings until the filling is opaque and reaches ${fish}. Rest each dumpling briefly on a spoon, then serve with black vinegar and thin ginger slivers.`
+    },[[8,"g","Fresh ginger for the dip"]]),
+    version(200,"A shrimp-forward filling with a lighter sesame finish.",{"raw lobster":130,"raw shrimp":150,"toasted sesame":.25},{
+      1:"Knead the flour and warm water into a smooth dough and rest it covered for 30 minutes. Mince most of the shrimp until sticky. Mix with diced lobster, the remaining chopped shrimp, soy, ginger, and sesame oil. Fold in the cold stock cubes and refrigerate until wrapping."
+    })
+  ],
+  "state-bird-duck-gyoza": [
+    version(55,"Dark sesame dumplings with a crisp underside and a more aromatic tomato ponzu.",{"black sesame":1.5,"neutral oil":1.5,"ripe tomatoes":190,"yuzu juice":1.5},{
+      3:"Grate the tomato, then drain it in a fine sieve for a few minutes. Stir the pulp with yuzu, vinegar, and the remaining soy. Finish the dumplings with the reserved sesame and serve with the dip."
+    }),
+    version(50,"Duck and lean chicken dumplings with extra cabbage and a thinner oil coat.",{"ground duck":170,"napa cabbage":145,"neutral oil":[2,"tsp","Neutral oil"]},{
+      0:"Finely mince the cabbage and squeeze it very dry. Mix the duck and chicken with the cabbage, scallions, ginger, most of the sesame, and half the soy. Keep the filling in the refrigerator until you wrap it.",
+      2:`Brush the oil into a nonstick skillet, brown the dumpling bottoms, then add the water and cover. Steam until the centers reach ${chicken}. Uncover and let the bottoms re-crisp.`
+    },[[150,"g","Lean ground chicken"]])
+  ],
+  "state-bird-yuba-amatriciana": [
+    version(50,"Chanterelles and rendered guanciale in a more concentrated tomato sauce.",{"pancetta":[125,"g","Guanciale"],"mixed mushrooms":[340,"g","Chanterelle mushrooms"],"grated pecorino":55},{
+      1:"Dice and render the guanciale until crisp. Set it aside and sear the cleaned chanterelles in batches in the drippings and oil.",
+      2:"Sizzle sliced garlic and chile flakes briefly. Add the tomatoes and reduce until thickened. Simmer the ribbons in the sauce with half the guanciale until hot and tender.",
+      3:"Finish the sauced yuba with pecorino, crisp reserved guanciale, and parsley."
+    }),
+    version(45,"Mushroom-heavy yuba with less pancetta and cannellini beans.",{"pancetta":45,"mixed mushrooms":420,"grated pecorino":25},{
+      2:"Sizzle garlic and chile briefly, then add the tomatoes and drained beans. Simmer until thickened. Add the yuba and cooked pancetta and cook gently until everything is hot."
+    },[[230,"g","Cooked cannellini beans, drained"]])
+  ],
+  "mister-jius-maitake-tofu": [
+    version(40,"Deeply seared maitake, golden garlic, and more fragrant peppercorn oil.",{"maitake":310,"neutral oil":3,"garlic":5,"green sichuan":.75},{
+      2:"Toast and crush the peppercorns. Fry sliced garlic and scallion whites in the remaining oil until golden. Reserve a little fragrant oil for serving before adding stock, soy, and the beans. Simmer until hot.",
+      3:"Plate the tofu on warm plates with the beans and seared maitake. Spoon the freshly made garlic-scallion oil over it and finish with ground peppercorns and scallion greens."
+    }),
+    version(35,"More tofu, beans, and mushrooms with just enough oil to brown the maitake.",{"silken tofu":700,"maitake":290,"cooked cranberry":310,"neutral oil":1.25,"light soy sauce":[2,"tsp","Light soy sauce"]},{
+      2:"Toast and crush the peppercorns. Warm garlic and scallion whites briefly in the remaining oil. Simmer with the stock, soy, and beans. Lightly mash a spoonful of the beans to thicken the broth."
+    })
+  ],
+  "singlethread-miso-black-cod": [
+    version(45,"Silky black cod with a cream-enriched white miso broth and heavily charred leeks.",{"leeks":310,"white miso":50,"neutral oil":1.5},{
+      2:`Transfer the fish when the center reaches ${fish}. Add cream to the broth and warm it gently until it returns to a simmer. Take it off heat and whisk in the miso.`
+    },[[65,"mL","Heavy cream"]]),
+    version(40,"Leaner steamed cod with snap peas, bok choy, and a lighter miso broth.",{"black cod":[650,"g","Cod fillets"],"sugar snap":270,"white miso":30,"neutral oil":[2,"tsp","Neutral oil"],"fine salt":.25},{
+      1:`Simmer dashi and leeks. Season the fish, cover, and steam. Add split baby bok choy and snap peas near the end. Remove the fish when it reaches ${fish}.`,
+      2:"Whisk miso with a little hot broth in a bowl, then stir it back into the skillet off heat.",
+      3:"Divide the leeks, bok choy, peas, and fish among shallow bowls. Finish with the broth and sliced scallions."
+    },[[270,"g","Baby bok choy"]])
+  ],
+  "maido-nikkei-short-ribs": [
+    version(220,"A highly reduced sake-soy glaze with a lively ají amarillo finish.",{"boneless beef short ribs":1000,"sake":145,"mirin":4,"ají amarillo":1.5,"scallions":120},{
+      1:"Deglaze with sake, then add mirin, soy, and stock before returning the ribs. Braise covered until fork-tender. Lift out the meat, skim and strain the braise, and reduce until glossy before coating the ribs.",
+      3:"Brush the hot ribs with the reduced glaze, serve over scallion rice, and spoon the ají-lime sauce around the plate."
+    }),
+    version(205,"Trimmed beef, less rice, and a bigger serving of peppers and peas.",{"boneless beef short ribs":[680,"g","Boneless beef chuck, visible fat trimmed"],"neutral oil":1.25,"soy sauce":2,"chilled cooked rice":255},{
+      0:"Heat the oven to 325°F / 165°C. Pat the trimmed beef dry and sear it in about half the oil. Transfer to a plate, then soften diced onion and stir in minced garlic and ginger.",
+      2:`Stir-fry sliced peppers and peas in the remaining oil until crisp-tender. Add the chilled rice and scallions and heat until the rice reaches ${chicken}. Whisk lime juice and ají amarillo together with a spoonful of the braising liquid.`,
+      3:"Serve the beef with vegetable fried rice and spoon the ají-lime sauce over the top."
+    },[[180,"g","Red bell pepper"],[140,"g","Frozen peas"]])
   ]
 };
 
