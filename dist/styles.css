@@ -430,6 +430,11 @@ dialog::backdrop { background:#171e18a8; backdrop-filter:blur(4px); }
 .calendar-nav .icon-button { width:36px; height:36px; border-radius:8px; }
 .planner-layout { display:grid; grid-template-columns:minmax(0,1fr) 255px; gap:14px; align-items:start; }
 .calendar-hint { display:flex; align-items:center; gap:5px; margin-bottom:7px; color:var(--muted); font-size:.875rem; }
+.calendar-touch-hint { display:none; }
+@media (pointer:coarse) {
+  .calendar-mouse-hint { display:none; }
+  .calendar-touch-hint { display:inline; }
+}
 .calendar-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; }
 .calendar-day { min-width:0; display:grid; grid-template-rows:auto repeat(3,1fr); background:#f8f6ed; border:1px solid #e6e2d5; border-radius:10px; overflow:hidden; }
 .calendar-day h3 { display:flex; justify-content:space-between; align-items:center; gap:3px; padding:8px 8px 7px; font-size:13px; font-weight:700; min-height:46px; border-bottom:1px solid var(--line); }
@@ -438,8 +443,9 @@ dialog::backdrop { background:#171e18a8; backdrop-filter:blur(4px); }
 .calendar-day.current-day h3 { background:#e2ead5; border-color:#d2ddc1; }
 .calendar-day.current-day time { border-radius:50%; background:#34452e; color:#fffdf4; }
 .calendar-cell { position:relative; margin:5px; border:1px solid #e8e2d4; background:var(--white); border-radius:6px; min-height:100px; padding:6px; display:flex; flex-direction:column; gap:4px; transition:background .15s,border-color .15s; }
+.calendar-cell[data-drag-meal] { cursor:grab; user-select:none; -webkit-touch-callout:none; }
 .calendar-grid.dragging .calendar-cell { border-style:dashed; border-color:#a5ad94; }
-.planner-layout.dragging,.calendar-grid.dragging .slot-move { cursor:grabbing; }
+.planner-layout.dragging,.calendar-grid.dragging [data-drag-meal],.calendar-grid.dragging .slot-move { cursor:grabbing; }
 .calendar-grid .calendar-cell.drag-source { opacity:.55; }
 .calendar-grid .calendar-cell.drop-target { background:#e3ebd5; border-color:#5e7952; outline:2px solid #5e7952; outline-offset:-1px; }
 .calendar-cell.drop-target::after { content:attr(data-drop-action); position:absolute; inset:auto 3px 3px; padding:3px; border-radius:4px; background:#34452e; color:var(--white); font-size:.75rem; font-weight:700; text-align:center; pointer-events:none; }

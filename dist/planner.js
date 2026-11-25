@@ -61,7 +61,7 @@ export function plannerPage(icon) {
       </div>
     </div>
     <div class="planner-layout">
-      <div><p class="calendar-hint">${icon("grip",17)} Drag a meal onto any slot. Drop on a day heading to keep its meal time.</p><div id="calendar-grid" class="calendar-grid"></div><p class="calendar-note">Weekday lunches start with your <a href="#lunches">5-day lunch plan</a>. Calendar edits are saved in this browser.</p></div>
+      <div><p class="calendar-hint">${icon("grip",17)} <span><span class="calendar-mouse-hint">Drag any part of a meal cell.</span><span class="calendar-touch-hint">Touch and hold a meal cell to drag.</span> Drop on a day heading to keep its meal time.</span></p><div id="calendar-grid" class="calendar-grid"></div><p class="calendar-note">Weekday lunches start with your <a href="#lunches">5-day lunch plan</a>. Calendar edits are saved in this browser.</p></div>
       <aside class="recipe-shelf" aria-labelledby="shelf-title">
         <h2 id="shelf-title">Recipe shelf</h2><p>Drag a recipe onto the calendar, or select it to pick a day.</p>
         <label class="field-search">${icon("search",17)}<input type="search" id="shelf-search" placeholder="Find a recipe" aria-label="Search the recipe shelf" autocomplete="off"></label>
@@ -118,7 +118,7 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
   let highlighted;
   let dragOrigin;
   let pointerDrag;
-  let ignoreMoveClick;
+  let suppressDragClick = false;
   let moveSource;
   let moveCalendar;
   let activeSlot;
@@ -188,9 +188,9 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
           const recipe = recipeIndex.get(entry?.id);
           const extra = batchSizes.get(slot) ?? 0;
           if (recipe) count++;
-          return `<div class="calendar-cell" data-drop-slot="${slot}">
+          return `<div class="calendar-cell" data-drop-slot="${slot}"${recipe ? ' data-drag-meal' : ''}>
             <div class="slot-label"><span>${label}</span>${recipe ? `<button class="slot-remove" data-remove-meal="${slot}" type="button" aria-label="Remove ${recipe.name} from ${slots.get(slot)}">${icon("x",14)}</button>` : ""}</div>
-            ${recipe ? `<a class="planned-meal" href="${recipeRoute(recipe)}" draggable="true" data-drag-recipe="${recipe.id}" data-from-slot="${slot}" data-recipe-portion="${entry.servings+extra}">${recipe.name}</a>${entry.leftoverOf ? '<small class="batch-note" title="From ' + slots.get(entry.leftoverOf) + '">Leftovers · ' + numberLabel(entry.servings) + (entry.servings === 1 ? ' serving' : ' servings') + '</small>' : extra ? '<small class="batch-note">Cook ' + numberLabel(entry.servings+extra) + ' servings</small>' : entry.servings !== 1 ? '<small class="planned-portion">' + numberLabel(entry.servings) + ' servings</small>' : ''}` : ""}
+            ${recipe ? `<a class="planned-meal" href="${recipeRoute(recipe)}" draggable="false" data-recipe-portion="${entry.servings+extra}">${recipe.name}</a>${entry.leftoverOf ? '<small class="batch-note" title="From ' + slots.get(entry.leftoverOf) + '">Leftovers · ' + numberLabel(entry.servings) + (entry.servings === 1 ? ' serving' : ' servings') + '</small>' : extra ? '<small class="batch-note">Cook ' + numberLabel(entry.servings+extra) + ' servings</small>' : entry.servings !== 1 ? '<small class="planned-portion">' + numberLabel(entry.servings) + ' servings</small>' : ''}` : ""}
             <div class="slot-actions">${recipe ? `<button class="slot-move" data-move-meal="${slot}" type="button" aria-label="Move ${recipe.name} from ${slots.get(slot)}" title="Drag or choose a destination">${icon("grip",15)} Move</button>` : ""}
               <button class="slot-picker${recipe ? ' occupied' : ''}" data-pick-slot="${slot}" type="button" aria-label="${recipe ? "Change" : "Add recipe to"} ${slots.get(slot)}">${recipe ? "Change" : icon("plus",14) + " Add"}</button></div>
           </div>`;
@@ -497,6 +497,7 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
     setDropTarget(null);
     dragOrigin?.classList.remove("drag-source");
     dragOrigin = null;
+    clearTimeout(pointerDrag?.hold);
     pointerDrag?.ghost?.remove();
     if (pointerDrag?.frame) cancelAnimationFrame(pointerDrag.frame);
     pointerDrag = null;
@@ -618,38 +619,47 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
     pointerDrag.frame = requestAnimationFrame(trackPointer);
   }
 
+  function liftMeal() {
+    const {from} = pointerDrag;
+    const entry = mealAt(calendar,from);
+    if (!entry || !root.isConnected) return;
+    startDrag(entry,from);
+    const ghost = document.createElement("span");
+    ghost.className = "calendar-drag-label";
+    ghost.textContent = recipeIndex.get(entry.id).name;
+    ghost.setAttribute("aria-hidden","true");
+    root.append(ghost);
+    pointerDrag.ghost = ghost;
+    suppressDragClick = true;
+    trackPointer();
+  }
+
+  const passedDragThreshold = ({clientX,clientY}) => Math.hypot(clientX-pointerDrag.x,clientY-pointerDrag.y) >= 7;
+  root.addEventListener("pointerdown", () => { suppressDragClick = false; }, true);
+  grid.addEventListener("click", event => {
+    if (!suppressDragClick || !event.detail) return;
+    suppressDragClick = false;
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
   grid.addEventListener("pointerdown", event => {
-    const button = event.target.closest("[data-move-meal]");
-    if (!button || event.button !== 0 || !event.isPrimary) return;
-    ignoreMoveClick = null;
-    pointerDrag = {button,id:event.pointerId,from:button.dataset.moveMeal,x:event.clientX,y:event.clientY};
-    button.setPointerCapture(event.pointerId);
+    const cell = event.target.closest("[data-drag-meal]");
+    const grip = event.target.closest("[data-move-meal]");
+    if (!cell || event.button !== 0 || !event.isPrimary || (event.pointerType === "touch" && !grip)) return;
+    pointerDrag = {id:event.pointerId,from:cell.dataset.dropSlot,x:event.clientX,y:event.clientY};
+    event.target.setPointerCapture(event.pointerId);
   });
   grid.addEventListener("pointermove", event => {
     if (pointerDrag?.id !== event.pointerId) return;
-    if (!pointerDrag.ghost) {
-      if (Math.hypot(event.clientX-pointerDrag.x,event.clientY-pointerDrag.y) < 7) return;
-      const {from} = pointerDrag;
-      const entry = mealAt(calendar,from);
-      if (!entry) return;
-      startDrag(entry,from);
-      const ghost = document.createElement("span");
-      ghost.className = "calendar-drag-label";
-      ghost.textContent = recipeIndex.get(entry.id).name;
-      ghost.setAttribute("aria-hidden","true");
-      root.append(ghost);
-      pointerDrag.ghost = ghost;
-      pointerDrag.frame = requestAnimationFrame(trackPointer);
-    }
+    if (!pointerDrag.ghost && !passedDragThreshold(event)) return;
     pointerDrag.x = event.clientX;
     pointerDrag.y = event.clientY;
+    if (!pointerDrag.ghost) liftMeal();
   });
   grid.addEventListener("pointerup", event => {
     if (pointerDrag?.id !== event.pointerId) return;
-    if (pointerDrag.ghost) {
-      ignoreMoveClick = pointerDrag.button;
-      completeDrag(dropSlot(document.elementFromPoint(event.clientX,event.clientY)));
-    } else clearDrag();
+    if (pointerDrag.ghost) completeDrag(dropSlot(document.elementFromPoint(event.clientX,event.clientY)));
+    else clearDrag();
   });
   for (const type of ["pointercancel","lostpointercapture"]) {
     grid.addEventListener(type,event => {
@@ -657,20 +667,53 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
     });
   }
   grid.addEventListener("keydown", event => {
-    if (event.key !== "Escape" || !pointerDrag?.ghost) return;
-    ignoreMoveClick = pointerDrag.button;
-    clearDrag();
+    if (event.key === "Escape" && pointerDrag?.ghost) clearDrag();
+  });
+  grid.addEventListener("touchstart", event => {
+    if (event.touches.length > 1) {
+      if (pointerDrag) clearDrag();
+      return;
+    }
+    const cell = event.target.closest("[data-drag-meal]");
+    if (!cell || event.target.closest("[data-move-meal]")) return;
+    const finger = event.changedTouches[0];
+    pointerDrag = {touchId:finger.identifier,from:cell.dataset.dropSlot,x:finger.clientX,y:finger.clientY,hold:setTimeout(liftMeal,250)};
+  }, {passive:true});
+  grid.addEventListener("touchmove", event => {
+    if (pointerDrag?.touchId === undefined) return;
+    const finger = Array.from(event.changedTouches).find(touch => touch.identifier === pointerDrag.touchId);
+    if (!finger) return;
+    if (!pointerDrag.ghost) {
+      if (passedDragThreshold(finger)) clearDrag();
+      return;
+    }
+    event.preventDefault();
+    pointerDrag.x = finger.clientX;
+    pointerDrag.y = finger.clientY;
+  }, {passive:false});
+  grid.addEventListener("touchend", event => {
+    if (pointerDrag?.touchId === undefined) return;
+    const finger = Array.from(event.changedTouches).find(touch => touch.identifier === pointerDrag.touchId);
+    if (!finger) return;
+    if (pointerDrag.ghost) {
+      event.preventDefault();
+      completeDrag(dropSlot(document.elementFromPoint(finger.clientX,finger.clientY)));
+    } else clearDrag();
+  });
+  grid.addEventListener("touchcancel", () => {
+    if (pointerDrag?.touchId !== undefined) clearDrag();
+  });
+  grid.addEventListener("contextmenu", event => {
+    if (pointerDrag?.touchId !== undefined) event.preventDefault();
   });
 
   root.addEventListener("dragstart", event => {
     const source = event.target.closest("[data-drag-recipe]");
     if (!source || !event.dataTransfer) return;
-    const from = source.dataset.fromSlot;
-    const entry = from ? mealAt(calendar,from) : {id:source.dataset.dragRecipe,servings:1};
-    if (!entry) return;
-    startDrag(entry,from);
+    const entry = {id:source.dataset.dragRecipe,servings:1};
+    startDrag(entry);
     event.dataTransfer.setData("text/plain",entry.id);
-    event.dataTransfer.effectAllowed = from ? "move" : "copy";
+    event.dataTransfer.effectAllowed = "copy";
   });
   root.addEventListener("dragend",clearDrag);
   grid.addEventListener("dragover", event => {
@@ -679,7 +722,7 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
     setDropTarget(slot);
     if (!slot) return;
     event.preventDefault();
-    event.dataTransfer.dropEffect = drag.from ? "move" : "copy";
+    event.dataTransfer.dropEffect = "copy";
   });
   grid.addEventListener("dragleave", event => {
     if (!grid.contains(event.relatedTarget)) setDropTarget(null);
@@ -726,7 +769,6 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
     } else if (data.pickSlot) {
       openPicker(data.pickSlot);
     } else if (data.moveMeal) {
-      if (button === ignoreMoveClick && event.detail) return;
       openMove(data.moveMeal);
     } else if (button.hasAttribute("data-quick-swaps")) {
       openSwaps();
