@@ -65,11 +65,15 @@ export function plannerPage(icon) {
       <aside class="recipe-shelf" aria-labelledby="shelf-title">
         <h2 id="shelf-title">Recipe shelf</h2><p>Drag a recipe onto the calendar, or select it to pick a day.</p>
         <label class="field-search">${icon("search",17)}<input type="search" id="shelf-search" placeholder="Find a recipe" aria-label="Search the recipe shelf" autocomplete="off"></label>
+        <button class="button light shelf-favorites" type="button" data-shelf-favorites aria-pressed="false" aria-controls="shelf-results">${icon("heart",16)} Favorites</button>
         <div id="shelf-results" class="shelf-results"></div>
       </aside>
     </div>
     <section id="weekly-groceries" class="weekly-groceries" aria-labelledby="weekly-groceries-title" hidden>
       <div class="weekly-groceries-head"><div><h2 id="weekly-groceries-title" tabindex="-1">Weekly groceries</h2><p id="weekly-groceries-range"></p></div><button class="button light" type="button" data-hide-groceries>Close list</button></div>
+      <div class="grocery-list-options"><label>Group by <select id="weekly-grocery-grouping"><option value="aisle">Store aisle</option><option value="cuisine">Cuisine</option></select></label>
+        <a class="button light" href="#pantry/groceries">${icon("basket",16)} Grocery guide</a></div>
+      <p class="reference grocery-store-note">Stores are suggestions. Check your local branch for availability.</p>
       <div id="weekly-grocery-items"></div>
     </section>
     <section class="matcher" aria-labelledby="matcher-title">
@@ -89,10 +93,11 @@ export function plannerPage(icon) {
   </section></div>`;
 }
 
-export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIngredients, recipeRoute, dishPhoto, duration, recipeContext, weekRecipes, numberLabel, measure, copyText}) {
+export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIngredients, recipeRoute, dishPhoto, duration, recipeContext, weekRecipes, numberLabel, measure, copyText, favoriteIds}) {
   const grid = root.querySelector("#calendar-grid");
   const shelf = root.querySelector("#shelf-results");
   const shelfSearch = root.querySelector("#shelf-search");
+  const shelfFavorites = root.querySelector("[data-shelf-favorites]");
   const dialog = root.querySelector("#planner-dialog");
   const inventoryForm = root.querySelector("#inventory-form");
   const inventoryInput = root.querySelector("#ingredient-inventory");
@@ -101,7 +106,9 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
   const inventoryResults = root.querySelector("#inventory-results");
   const undo = root.querySelector("[data-plan-undo]");
   const groceryPanel = root.querySelector("#weekly-groceries");
+  const groceryGrouping = root.querySelector("#weekly-grocery-grouping");
   const groceryButton = root.querySelector("[data-show-groceries]");
+  groceryGrouping.value = read("grocery-grouping","aisle") === "cuisine" ? "cuisine" : "aisle";
   let shoppingItems = [];
   const recipeIndex = new Map(recipes.map(recipe => [recipe.id,recipe]));
   const cookingOrder = [...recipes].sort((a,b) => a.time - b.time || a.name.localeCompare(b.name));
@@ -114,6 +121,7 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
   let start = weekStart(new Date());
   let calendar = read(storageKey, {});
   let lastChange = [];
+  let favoritesOnly = false;
   let drag;
   let highlighted;
   let dragOrigin;
@@ -209,7 +217,7 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
   function renderGroceries() {
     shoppingItems = groceryItems(calendar);
     root.querySelector("#weekly-groceries-range").textContent = range.formatRange(start,shiftDay(start,6));
-    root.querySelector("#weekly-grocery-items").innerHTML = renderWeeklyGroceries(shoppingItems,read(groceryKey(),{}),measure);
+    root.querySelector("#weekly-grocery-items").innerHTML = renderWeeklyGroceries(shoppingItems,read(groceryKey(),{}),measure,groceryGrouping.value);
   }
 
   function stageCalendar(latest, changes, recordDefaults = false) {
@@ -262,10 +270,13 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
   }
 
   function renderShelf() {
-    const list = findRecipes(shelfSearch.value);
+    const favorites = favoritesOnly ? favoriteIds() : null;
+    const list = findRecipes(shelfSearch.value).filter(recipe => !favorites || favorites.has(recipe.id));
+    const empty = !favorites ? "No recipes match that search." : favorites.size ? "No favorites match that search." :
+      'No favorites yet. <a href="#restaurants">Browse recipes</a> and tap a heart.';
     shelf.innerHTML = list.length ? list.map(recipe => `<button class="shelf-recipe" type="button" draggable="true" data-drag-recipe="${recipe.id}" data-plan-recipe="${recipe.id}">
       ${dishPhoto(recipe,true,"")}<span><strong>${recipe.name}</strong><small>${duration(recipe.time)} · ${recipe.cuisine}</small></span>${icon("plus",15)}
-    </button>`).join("") : '<p class="shelf-empty">No recipes match that search.</p>';
+    </button>`).join("") : '<p class="shelf-empty">' + empty + '</p>';
   }
 
   function showDialog(title, body) {
@@ -321,7 +332,7 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
       });
       return lines.length ? [fullDate.format(day),...lines].join("\n") : "";
     }).filter(Boolean).join("\n\n");
-    const groceries = groceryText(groceryItems(current),read(groceryKey(),{}),measure);
+    const groceries = groceryText(groceryItems(current),read(groceryKey(),{}),measure,groceryGrouping.value);
     showDialog("Share this week", `<textarea class="transfer-text" id="share-week-text" rows="13" aria-label="Meal plan and grocery list" readonly></textarea>
       <div class="transfer-actions"><button class="button dark" type="button" data-copy-week>${icon("copy",16)} Copy plan and groceries</button><p role="status" data-copy-week-status></p></div>`);
     dialog.querySelector("#share-week-text").value = ["Mise meal plan · " + range.formatRange(start,shiftDay(start,6)),
@@ -768,6 +779,10 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
       copyText(dialog.querySelector("#share-week-text"),dialog.querySelector("[data-copy-week-status]"));
     } else if (data.pickSlot) {
       openPicker(data.pickSlot);
+    } else if (button === shelfFavorites) {
+      favoritesOnly = !favoritesOnly;
+      shelfFavorites.setAttribute("aria-pressed",String(favoritesOnly));
+      renderShelf();
     } else if (data.moveMeal) {
       openMove(data.moveMeal);
     } else if (button.hasAttribute("data-quick-swaps")) {
@@ -812,6 +827,11 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
   });
   groceryPanel.addEventListener("change", event => {
     const input = event.target;
+    if (input === groceryGrouping) {
+      write("grocery-grouping",input.value);
+      renderGroceries();
+      return;
+    }
     const item = shoppingItems.find(item=>item.key === input.dataset.weeklyItem);
     if (!item) return;
     const checked = read(groceryKey(),{});
@@ -899,4 +919,5 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
   renderWeek();
   renderShelf();
   renderMatches();
+  return () => { if (favoritesOnly) renderShelf(); };
 }

@@ -1,4 +1,5 @@
 import { normalizeText } from "./ingredient-match.js";
+import { cuisineForGroceries, groceryStores } from "./grocery-guide.js";
 
 const aliases = [
   ["Chicken thighs, boneless and skinless", /^(?:raw )?boneless skinless chicken thighs$|^chicken thighs$/],
@@ -44,19 +45,21 @@ export function groceryTotals(cooks, recipes, recipeIngredients) {
     const recipe = recipes.get(cook.id);
     if (!recipe) continue;
     const portions = cook.servings / (recipe.servings ?? 1);
+    const cuisine = cuisineForGroceries(recipe.cuisine);
     for (const [amount,unit,label] of recipeIngredients(recipe)) {
       const name = groceryName(label);
       if (!name) continue;
       const key = normalizeText(name);
       const [quantity,unitKey] = groceryUnit(amount * portions,unit);
       const aisle = (!pantryWords.test(key) && aisleRules.find(([,regex])=>regex.test(key))?.[0]) || "Pantry & seasonings";
-      if (!items.has(key)) items.set(key,{key,name,aisle,units:new Map()});
-      const totals = items.get(key).units;
-      totals.set(unitKey,(totals.get(unitKey) ?? 0) + quantity);
+      if (!items.has(key)) items.set(key,{key,name,aisle,units:new Map(),cuisines:new Set()});
+      const item = items.get(key);
+      item.cuisines.add(cuisine);
+      item.units.set(unitKey,(item.units.get(unitKey) ?? 0) + quantity);
     }
   }
   return [...items.values()].sort((a,b)=>a.name.localeCompare(b.name)).map(item=>({
-    ...item, units:[...item.units].sort(([a],[b])=>a.localeCompare(b)).map(([unit,n])=>[unit,Math.round(n*100)/100])
+    ...item, cuisines:[...item.cuisines].sort(), units:[...item.units].sort(([a],[b])=>a.localeCompare(b)).map(([unit,n])=>[unit,Math.round(n*100)/100])
   }));
 }
 
@@ -65,14 +68,24 @@ export function grocerySignature(item) {
 }
 
 export const groceryQuantity = (item, measure) => item.units.map(([unit,amount]) => measure(amount,unit)).join(" + ");
-function groceryGroups(items) {
+const shared = "Shared across cuisines";
+function groceryGroups(items, grouping) {
+  if (grouping === "cuisine") {
+    const groups = new Map();
+    for (const item of items) {
+      const cuisine = item.cuisines.length > 1 ? shared : item.cuisines[0];
+      if (!groups.has(cuisine)) groups.set(cuisine,[]);
+      groups.get(cuisine).push(item);
+    }
+    return [...groups].sort(([a],[b])=>a === shared ? -1 : b === shared ? 1 : a.localeCompare(b));
+  }
   return [...aisleRules.map(([name]) => name),"Pantry & seasonings"]
     .map(aisle => [aisle,items.filter(item => item.aisle === aisle)]).filter(([,list]) => list.length);
 }
 
-export function groceryText(items, checked, measure) {
-  return groceryGroups(items).map(([aisle,list]) => [
-    aisle,...list.map(item => (checked[item.key] === grocerySignature(item) ? "[x] " : "[ ] ") + item.name + " · " + groceryQuantity(item,measure))
+export function groceryText(items, checked, measure, grouping) {
+  return groceryGroups(items,grouping).map(([group,list]) => [
+    group,...list.map(item => (checked[item.key] === grocerySignature(item) ? "[x] " : "[ ] ") + item.name + " · " + groceryQuantity(item,measure))
   ].join("\n")).join("\n\n");
 }
 
@@ -84,13 +97,14 @@ export function groceryChanges(before, after) {
     .sort(([a,b],[c,d]) => (b ?? a).name.localeCompare((d ?? c).name));
 }
 
-export function renderWeeklyGroceries(items, checked, measure) {
+export function renderWeeklyGroceries(items, checked, measure, grouping) {
   const completed = items.filter(item=>checked[item.key] === grocerySignature(item)).length;
   return items.length ? '<p data-weekly-progress aria-live="polite">' + completed + ' of ' + items.length + ' ingredients checked</p><div class="grocery-grid">' +
-    groceryGroups(items).map(([aisle,list]) =>
-      '<section class="grocery-group"><h3>' + aisle + '</h3>' + list.map(item=>
+    groceryGroups(items,grouping).map(([group,list]) =>
+      '<section class="grocery-group"><h3>' + group + '</h3>' + list.map(item=>
         '<label class="grocery-item"><input type="checkbox" data-weekly-item="' + item.key + '"' + (checked[item.key] === grocerySignature(item) ? ' checked' : '') + '><span>' + item.name + '</span><strong>' +
-        groceryQuantity(item,measure) + '</strong></label>'
+        groceryQuantity(item,measure) + '</strong><small>' + groceryStores(item).slice(0,2).join(" · ") + '</small>' +
+        (group === shared ? '<small>' + item.cuisines.join(" · ") + '</small>' : '') + '</label>'
       ).join("") + '</section>'
     ).join("") + '</div>' : '<p class="matcher-empty">Add a meal to this week to build your grocery list.</p>';
 }

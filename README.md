@@ -12,9 +12,13 @@ Open [localhost:8787](http://localhost:8787). The site needs no build step. The 
 
 Open **My notes** in a recipe to write personal cooking notes. Notes save automatically in that browser. **Copy notes** copies their plain text for pasting elsewhere.
 
+Tap the heart on a recipe card or the **Favorite** button inside a recipe. Find saved recipes under **Recipes → Favorites** or use **Favorites** on the planner’s recipe shelf. Your browser remembers them and includes them in kitchen backups.
+
 On **This Week**, use **Kitchen data** to copy all recipe notes or transfer saved data with a JSON backup. Restoring a backup keeps other local entries and gives the file priority where it supplies the same note, calendar slot, checklist, or setting.
 
 Use **Change → Quick swaps** on a planned meal to see faster, higher-protein, or ingredient-based alternatives and preview changes to weekly groceries. **Share week** copies the displayed plan and grocery checklist as text, including batch sizes and leftover sources.
+
+Open **Groceries** on the weekly planner and group the list by **Store aisle** or **Cuisine**. Ingredients used by several cuisines appear once with their total quantity. The **Grocery guide** under Pantry has a searchable directory with cuisine, ingredient type, and store filters.
 
 Drag from anywhere in a filled meal cell to transfer it to a different day or meal slot. On a touchscreen, touch and hold the cell before dragging. A filled destination swaps the two meals. Drop on a day heading to keep the same meal time, or press **Move** to pick a slot.
 

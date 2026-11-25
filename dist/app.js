@@ -7,8 +7,9 @@ import { normalizeText, matchesText } from "./ingredient-match.js";
 import { templateRecipes, estimatedNutrition, estimatedVersionNutrition } from "./meal-templates.js";
 import { fish, fishGroups } from "./fish.js";
 import { nutritionPage, nutritionSections } from "./nutrition-guide.js";
-import { mountKitchenData, recipeNoteKey } from "./kitchen-data.js";
+import { favoriteRecipesKey, mountKitchenData, recipeNoteKey } from "./kitchen-data.js";
 import { recipeVersion } from "./recipe-versions.js";
+import { groceryGuide, groceryGuidePage, mountGroceryGuide } from "./grocery-guide.js";
 
 const shapes = {
   mark:'<path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
@@ -30,6 +31,7 @@ const shapes = {
   note:'<path d="M13 20H5V4h14v10l-6 6Zm0 0v-6h6M8 8h8M8 11h5"/>',
   copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
   grip:'<path stroke-linecap="round" stroke-width="2.5" d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01"/>',
+  heart:'<path d="M20.6 5.6a4.6 4.6 0 0 0-6.5 0L12 7.7 9.9 5.6a4.6 4.6 0 0 0-6.5 6.5L12 20.7l8.6-8.6a4.6 4.6 0 0 0 0-6.5Z"/>',
   printer:'<path d="M7 7V3h10v4m0 10h4V8H3v9h4m0-4h10v8H7zm11-2h.01"/>',
   'chevron-left':'<path d="m15 5-7 7 7 7"/>',
   'chevron-right':'<path d="m9 5 7 7-7 7"/>'
@@ -52,6 +54,7 @@ const write = (key, value) => {
 };
 const byId = (items, id) => items.find(item => item.id === id);
 const allRecipes = [...restaurantRecipes, ...regionalRecipes, ...recipes, ...templateRecipes];
+const favoriteIds = () => new Set(read(favoriteRecipesKey, []));
 const recipeContext = recipe => restaurants[recipe.restaurant]?.name ?? recipe.origin ?? (recipe.template ? "Weekly templates" : "Lunch plan");
 const pantryIndex = pantry.flatMap(p => p.staples.map(([name,desc,swap],index) => ({
   name, desc, swap, cuisine:p.name, region:p.region, link:"#pantry/" + p.id + "/" + index
@@ -93,6 +96,7 @@ let recipePortionLimit = 8;
 let displayedRecipe;
 let displayedVersion = "original";
 let plannedPortion;
+let refreshPlannerShelf;
 
 const recipeRoute = recipe => "#recipe/" + recipe.id;
 const dishPhoto = (recipe, lazy = true, alt = recipe.name) => '<img src="assets/' + (recipe.image ?? recipe.id) + '.webp" alt="' + alt + '"' + (lazy ? ' loading="lazy"' : '') + '>';
@@ -121,7 +125,7 @@ function pantryPage() {
   const visible = pantry.filter(p => pantryRegion === "All" || p.region === pantryRegion);
   const related = allRecipes.filter(r => r.cuisine.toLowerCase().startsWith(item.name.toLowerCase()));
   return sectionIntro("Pantry", "Pantry staples", "Browse " + pantryIndex.length + " ingredient entries across " + pantry.length + " cuisines, with uses and substitutions.", "jar") +
-    '<section class="wrap page-body"><div class="pantry-search"><label class="field-search">' + icon("search",19) + '<input id="pantry-search" type="search" autocomplete="off" placeholder="Try kombu, chile paste, or rice noodles" aria-label="Search pantry ingredients across all cuisines"></label><button class="button light" type="button" data-clear-pantry hidden>Clear</button></div><div id="pantry-matches" hidden><p id="pantry-search-count" aria-live="polite"></p><div id="pantry-results" class="pantry-result-grid"></div></div><div id="pantry-browse"><div class="pills" aria-label="Filter by region">' + regions.map(region => '<button data-region="' + region + '" aria-pressed="' + (pantryRegion === region) + '">' + region + '</button>').join("") + '</div><div class="pantry-layout"><aside class="cuisine-list" aria-label="Choose a cuisine">' +
+    '<section class="wrap page-body"><div class="guide-navigation pills"><a href="#pantry" aria-current="page">Pantry staples</a><a href="#pantry/groceries">Grocery guide</a></div><div class="pantry-search"><label class="field-search">' + icon("search",19) + '<input id="pantry-search" type="search" autocomplete="off" placeholder="Try kombu, chile paste, or rice noodles" aria-label="Search pantry ingredients across all cuisines"></label><button class="button light" type="button" data-clear-pantry hidden>Clear</button></div><div id="pantry-matches" hidden><p id="pantry-search-count" aria-live="polite"></p><div id="pantry-results" class="pantry-result-grid"></div></div><div id="pantry-browse"><div class="pills" aria-label="Filter by region">' + regions.map(region => '<button data-region="' + region + '" aria-pressed="' + (pantryRegion === region) + '">' + region + '</button>').join("") + '</div><div class="pantry-layout"><aside class="cuisine-list" aria-label="Choose a cuisine">' +
     visible.map(p => '<a href="#pantry/' + p.id + '" class="cuisine-choice" ' + (p.id === item.id ? 'aria-current="true"' : '') + '><span class="emblem" aria-hidden="true">' + p.emblem + '</span><span>' + p.name + '</span>' + icon("arrow",16) + '</a>').join("") +
     '</aside><article class="pantry-content"><header class="detail-banner ' + item.color + '"><span class="emblem" aria-hidden="true">' + item.emblem + '</span><div><h2>' + item.name + ' pantry</h2><p>' + item.summary + '</p></div></header><div class="staples">' +
     item.staples.map(([name,desc,swap],i) => '<div class="staple" id="ingredient-' + i + '"><h3>' + name + '</h3><p>' + desc + '</p><p class="swap"><strong>Swap</strong> ' + swap + '</p></div>').join("") +
@@ -216,26 +220,67 @@ function duration(minutes) {
   return [hours && hours + " hr", rest && rest + " min"].filter(Boolean).join(" ");
 }
 
+function favoriteButton(recipe, saved, inCard = false) {
+  return '<button class="' + (inCard ? 'icon-button card-favorite' : 'button light') + ' recipe-favorite" type="button" data-favorite-recipe="' + recipe.id +
+    '" aria-pressed="' + saved + '" aria-label="Favorite ' + recipe.name + '"' + (inCard ? ' title="Favorite recipe"' : '') + '>' +
+    icon("heart",18) + (inCard ? '' : ' Favorite') + '</button>';
+}
+
+const savedRecipes = ids => [...ids].reverse().map(id => byId(allRecipes,id)).filter(Boolean);
+const recipeCount = count => count + (count === 1 ? " recipe" : " recipes");
+
+function restaurantCards(items, favorites) {
+  return items.map(r => {
+    const place = restaurants[r.restaurant];
+    const location = place?.place ?? chineseRegions[r.region];
+    return '<article class="restaurant-recipe"><a class="library-card restaurant-card" href="' + recipeRoute(r) + '">' + dishPhoto(r,true,"") + '<div><div class="restaurant-origin">' +
+      recipeContext(r) + (location && location !== r.origin ? ' <span>· ' + location + '</span>' : '') + '</div><h2>' + r.name + '</h2><p>' + r.desc +
+      '</p><div class="restaurant-meta">' + chip(duration(r.time),"clock") + chip(r.cuisine) + '</div></div></a>' + favoriteButton(r,favorites.has(r.id),true) + '</article>';
+  }).join("");
+}
+
+function favoriteCards(items, favorites) {
+  return items.length ? restaurantCards(items,favorites) : '<div class="favorites-empty"><h2>No favorites yet</h2><p>Tap the heart on a recipe card to save it here.</p><a class="button dark" href="#restaurants">Browse recipes</a></div>';
+}
+
+function refreshFavorites() {
+  const favorites = favoriteIds();
+  const results = view.querySelector("[data-favorite-results]");
+  if (results) {
+    const focused = [...results.querySelectorAll("[data-favorite-recipe]")].indexOf(document.activeElement);
+    const saved = savedRecipes(favorites);
+    results.innerHTML = favoriteCards(saved,favorites);
+    view.querySelector("[data-favorite-count]").textContent = recipeCount(saved.length);
+    if (focused >= 0) {
+      const buttons = results.querySelectorAll("[data-favorite-recipe]");
+      (buttons[Math.min(focused,buttons.length-1)] ?? view.querySelector('[href="#restaurants/favorites"]')).focus({preventScroll:true});
+    }
+  }
+  for (const button of document.querySelectorAll("[data-favorite-recipe]")) {
+    button.setAttribute("aria-pressed",String(favorites.has(button.dataset.favoriteRecipe)));
+  }
+  refreshPlannerShelf?.();
+}
+
 function restaurantPage(filter, region) {
-  const filters = [["all","All recipes"],["bay","Bay Area"],["dim-sum","Dim sum"],["china","Regional Chinese"],["chains","Chain favorites"],["prep","Meal prep"],["us","Elsewhere in the U.S."],["asia","Across Asia"]];
+  const filters = [["all","All recipes"],["favorites","Favorites"],["bay","Bay Area"],["dim-sum","Dim sum"],["china","Regional Chinese"],["chains","Chain favorites"],["prep","Meal prep"],["us","Elsewhere in the U.S."],["asia","Across Asia"]];
   const active = filters.some(([id]) => id === filter) ? filter : "all";
   const activeRegion = Object.hasOwn(chineseRegions,region) ? region : "all";
-  const visible = allRecipes.filter(r => {
+  const favorites = favoriteIds();
+  const showingFavorites = active === "favorites";
+  const visible = showingFavorites ? savedRecipes(favorites) : allRecipes.filter(r => {
     const place = restaurants[r.restaurant];
     return active === "all" || place?.area === active || (active === "dim-sum" && r.dimSum) || (active === "prep" && (r.template || Number.isInteger(r.day))) ||
       (active === "chains" && place?.chain) || (active === "china" && r.region && (activeRegion === "all" || activeRegion === r.region));
   });
   const regionFilters = active === "china" ? '<div class="pills recipe-region-filters" aria-label="Filter Chinese recipes by region">' + [["all","All regions"],...Object.entries(chineseRegions)].map(([id,label]) =>
     '<a href="#restaurants/china' + (id === "all" ? "" : "/" + id) + '"' + (activeRegion === id ? ' aria-current="page"' : '') + '>' + label + '</a>').join("") + '</div>' : "";
-  return sectionIntro("Recipes", "Recipe library", "Cook Bay Area favorites, Chinese regional classics, and quick lunches.", "bowl") +
-    '<section class="wrap page-body"><div class="restaurant-controls"><div class="pills" aria-label="Filter restaurant recipes">' +
+  return sectionIntro("Recipes", showingFavorites ? "Favorites" : "Recipe library", showingFavorites ? "Your saved recipes." : "Cook Bay Area favorites, Chinese regional classics, and quick lunches.", showingFavorites ? "heart" : "bowl") +
+    '<section class="wrap page-body"><div class="restaurant-controls"><div class="pills" aria-label="Filter recipes">' +
     filters.map(([id,label]) => '<a href="#restaurants' + (id === "all" ? "" : "/" + id) + '" ' + (active === id ? 'aria-current="page"' : '') + '>' + label + '</a>').join("") +
-    '</div><p>' + visible.length + (visible.length === 1 ? ' recipe' : ' recipes') + '</p></div>' + regionFilters + '<div class="library-grid restaurant-grid">' +
-    visible.map(r => {
-      const place = restaurants[r.restaurant];
-      const location = place?.place ?? chineseRegions[r.region];
-      return '<a class="library-card restaurant-card" href="' + recipeRoute(r) + '">' + dishPhoto(r,true,"") + '<div><div class="restaurant-origin">' + recipeContext(r) + (location && location !== r.origin ? ' <span>· ' + location + '</span>' : '') + '</div><h2>' + r.name + '</h2><p>' + r.desc + '</p><div class="restaurant-meta">' + chip(duration(r.time),"clock") + chip(r.cuisine) + '</div></div></a>';
-    }).join("") + '</div></section>';
+    '</div><p' + (showingFavorites ? ' data-favorite-count role="status"' : '') + '>' + recipeCount(visible.length) + '</p></div>' + regionFilters +
+    '<div class="library-grid restaurant-grid"' + (showingFavorites ? ' data-favorite-results' : '') + '>' +
+    (showingFavorites ? favoriteCards(visible,favorites) : restaurantCards(visible,favorites)) + '</div></section>';
 }
 function groceryList() {
   const totals = new Map();
@@ -415,7 +460,7 @@ function showRecipe(r) {
   const versionOptions = [["original","Original"],["restaurant","Restaurant-style"],["fitness","Fitness"]];
   const versions = versionOptions.map(([value,label]) => '<button type="button" data-recipe-version="' + value + '" aria-pressed="' + (value === displayedVersion) + '" aria-controls="recipe-cooking">' + label + '</button>').join("");
   recipeDialog.innerHTML = '<div class="recipe-cover">' + dishPhoto(r,false) + '<button class="icon-button" type="button" data-close aria-label="Close recipe">' + icon("x") + '</button></div><div class="recipe-content"><div class="eyebrow"><i></i> ' + byline.toUpperCase() + '</div><h2 id="recipe-title">' + r.name + '</h2><div class="recipe-toolbar"><div class="recipe-version-picker" role="group" aria-label="Recipe version">' + versions +
-    '</div><button class="button light note-jump" type="button" data-jump-note aria-controls="personal-note">' + icon("note",16) + ' My notes</button></div><div id="recipe-cooking">' + cookingSection(r,displayedVersion) + '</div>' + recipeNoteSection() +
+    '</div><div class="recipe-personal-actions">' + favoriteButton(r,favoriteIds().has(r.id)) + '<button class="button light note-jump" type="button" data-jump-note aria-controls="personal-note">' + icon("note",16) + ' My notes</button></div></div><p class="reference" data-favorite-error role="status" hidden></p><div id="recipe-cooking">' + cookingSection(r,displayedVersion) + '</div>' + recipeNoteSection() +
     '<div class="recipe-notes"><div class="sage"><h3>Substitutions</h3><p>' + r.swap + '</p></div><div class="gold"><h3>Storage & reheating</h3><p>' + r.store +
     '</p><p>Chill within 2 hours, use within 3–4 days or freeze, and reheat cooked leftovers to 165°F / 74°C.</p></div></div>' + recipeSource(r) +
     (r.sauce ? '<a class="text-link recipe-sauce" href="#sauces/' + r.sauce + '">Related sauce calculator</a>' : '') + '</div>';
@@ -429,12 +474,15 @@ function showRecipe(r) {
 const entries = [
   ...nutritionSections.map(item=>({title:item.label,kind:"Guide",link:"#nutrition" + (item.id === "basics" ? "" : "/" + item.id),desc:item.description,terms:item.terms})),
   {title:"This Week", kind:"Planner", link:"#plan", desc:"Weekly meal calendar", terms:"schedule breakfast lunch dinner recipe ingredient match what can i cook"},
+  {title:"Favorites", kind:"Recipes", link:"#restaurants/favorites", desc:"Your saved recipes", terms:"bookmarks favorites saved marked"},
+  {title:"Grocery guide", kind:"Guide", link:"#pantry/groceries", desc:"Vegetables, meats, seafood, and where to shop", terms:"shopping markets grocery stores where to buy"},
   ...recipes.map(r => ({title:r.name, kind:"Recipe", link:recipeRoute(r), desc:r.cuisine + " · " + r.time + " min · " + macros(r)[0] + " g protein", terms:r.items.map(([id]) => ingredients[id][0]).join(" ")})),
   ...templateRecipes.map(r => ({title:r.name,kind:"Recipe",link:recipeRoute(r),desc:"Weekly templates · " + Math.round(r.nutrition[0]) + " g protein",terms:[r.cuisine,r.animal,...r.items.map(([, ,label])=>label)].join(" ")})),
   ...restaurantRecipes.map(r => ({title:r.name, kind:"Recipe", link:recipeRoute(r), desc:restaurants[r.restaurant].name + " · " + restaurants[r.restaurant].place + " · " + duration(r.time), terms:[r.inspiration,r.cuisine,r.animal,r.dimSum ? "dim sum yum cha" : "",...recipeIngredients(r).map(([, ,label]) => label)].join(" ")})),
   ...regionalRecipes.map(r => ({title:r.name, kind:"Recipe", link:recipeRoute(r), desc:r.origin + " · " + duration(r.time), terms:[r.inspiration,r.cuisine,r.animal,"regional Chinese",chineseRegions[r.region],r.dimSum ? "dim sum yum cha" : "",...recipeIngredients(r).map(([, ,label]) => label)].join(" ")})),
   ...sauces.map(s => ({title:s.name, kind:"Sauce", link:"#sauces/" + s.id, desc:s.cuisine + " · " + sauceUses[s.use] + " · " + s.time + " min", terms:s.items.map(([name]) => name).join(" ") + " " + s.use})),
   ...pantryIndex.map(({name,desc,swap,cuisine,link}) => ({title:name,kind:"Pantry",link,desc:cuisine + " pantry · " + desc,terms:swap})),
+  ...groceryGuide.map(item => ({title:item.name,kind:"Grocery",link:"#pantry/groceries/" + normalizeText(item.name).replaceAll(" ","-"),desc:item.category + " · " + item.tip,terms:item.aliases.join(" ")})),
   ...meats.flatMap(m => m.cuts.map(c => ({title:c[1], kind:"Meat cut", link:cutRoute(m,c), desc:m.name + " · " + c[2], terms:c.slice(3,5).join(" ")}))),
   ...fish.map(item=>({title:item.name,kind:"Fish",link:"#meat/seafood/fish-" + item.id,desc:fishGroups[item.group] + " · 5 recipe links",terms:item.buy + " " + item.cook + " seafood"}))
 ];
@@ -518,6 +566,8 @@ function renderRoute(reset = false, requestedFocus = "") {
     markup = nutritionPage(id);
   } else if (route === "restaurants") {
     markup = restaurantPage(id,sub);
+  } else if (route === "pantry" && id === "groceries") {
+    markup = sectionIntro("Pantry","Grocery guide","Find " + groceryGuide.length + " ingredients by cuisine, type, and store.", "basket") + groceryGuidePage(icon);
   } else if (route === "pantry") {
     const item = byId(pantry,id);
     if (item) {
@@ -548,7 +598,8 @@ function renderRoute(reset = false, requestedFocus = "") {
     markup = home();
   }
   view.innerHTML = markup;
-  if (route === "plan") mountPlanner(view.querySelector("#planner-page"), allRecipes, {icon, read, write, notice, recipeIngredients, recipeRoute, dishPhoto, duration, recipeContext, weekRecipes, numberLabel, measure, copyText});
+  refreshPlannerShelf = route === "plan" ? mountPlanner(view.querySelector("#planner-page"), allRecipes, {icon, read, write, notice, recipeIngredients, recipeRoute, dishPhoto, duration, recipeContext, weekRecipes, numberLabel, measure, copyText, favoriteIds}) : null;
+  if (route === "pantry" && id === "groceries") mountGroceryGuide(view.querySelector("#grocery-guide"),(sub ?? "").replaceAll("-"," "));
   if (route === "sauces") view.querySelector("#sauce-search").value = sauceQuery;
   if (animal) drawMeat(animal,active);
   document.querySelectorAll(".bar nav a").forEach(link => {
@@ -556,8 +607,13 @@ function renderRoute(reset = false, requestedFocus = "") {
     else link.removeAttribute("aria-current");
   });
   document.title = ({"plan":"This Week — Mise","home":"Mise — The home cook’s field guide","restaurants":"Recipe library — Mise","pantry":"Pantry staples — Mise","sauces":"Sauce calculator — Mise","lunches":"5 Days of High-Protein Asian Lunches — Mise","meat":"Meat & cuts — Mise","nutrition":"Nutrition & longevity — Mise"})[route];
+  if (route === "restaurants" && id === "favorites") document.title = "Favorites — Mise";
+  if (route === "pantry" && id === "groceries") document.title = "Grocery guide — Mise";
   if (requestedFocus) view.querySelector(requestedFocus)?.focus({preventScroll:true});
-  if (restoringRecipe) document.querySelector('main a[href="' + recipeRoute(closedRecipe) + '"]')?.focus({preventScroll:true});
+  if (restoringRecipe) {
+    const recipeLink = view.querySelector('a[href="' + recipeRoute(closedRecipe) + '"]');
+    (recipeLink ?? view.querySelector('[href="#restaurants/favorites"][aria-current="page"]'))?.focus({preventScroll:true});
+  }
   if (route === "nutrition" && !viewChanged && !restoringRecipe) view.querySelector('.health-nav a[aria-current="page"]')?.focus({preventScroll:true});
   if (reset && target) {
     const el = view.querySelector(target);
@@ -568,6 +624,9 @@ function renderRoute(reset = false, requestedFocus = "") {
   }
 }
 window.addEventListener("hashchange", () => renderRoute(true));
+window.addEventListener("storage", event => {
+  if (event.key === "mise-" + favoriteRecipesKey || event.key === null) refreshFavorites();
+});
 recipeDialog.addEventListener("close", () => {
   if (location.hash.startsWith("#recipe/") && !recipeDialog.open) location.hash = returnRoute;
 });
@@ -649,6 +708,21 @@ document.addEventListener("click", event => {
   const button = event.target.closest("button");
   if (!button) return;
   const d = button.dataset;
+  if (d.favoriteRecipe) {
+    const favorites = favoriteIds();
+    const saved = favorites.has(d.favoriteRecipe);
+    if (saved) favorites.delete(d.favoriteRecipe); else favorites.add(d.favoriteRecipe);
+    const status = recipeDialog.open ? recipeDialog.querySelector("[data-favorite-error]") : null;
+    if (write(favoriteRecipesKey,[...favorites])) {
+      if (status) status.hidden = true;
+      else notice(saved ? "Removed from Favorites" : "Saved to Favorites");
+      refreshFavorites();
+    } else if (status) {
+      status.textContent = "Couldn’t save Favorites in this browser.";
+      status.hidden = false;
+    } else notice("Couldn’t save Favorites in this browser");
+    return;
+  }
   if (button.hasAttribute("data-search")) openSearch();
   if (d.query) openSearch(d.query);
   if (button.hasAttribute("data-clear-pantry")) {

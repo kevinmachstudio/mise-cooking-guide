@@ -3,9 +3,10 @@ const mealSlot = /^\d{4}-\d{2}-\d{2}\|(?:breakfast|lunch|dinner)$/;
 const isRecord = value => value !== null && typeof value === "object" && !Array.isArray(value);
 const entriesMatch = (value, match) => isRecord(value) && Object.entries(value).every(([key,item]) => match(key,item));
 export const recipeNoteKey = recipe => "recipe-note-" + recipe.id;
+export const favoriteRecipesKey = "favorite-recipes";
 
 function backupKey(key) {
-  return /^(?:week|portions|sauce-portions|inventory|meal-calendar|recipe-note-[a-z0-9-]+|weekly-grocery-\d{4}-\d{2}-\d{2}|groceries-[a-z0-9-]+-[1-8])$/.test(key);
+  return key === favoriteRecipesKey || /^(?:week|portions|sauce-portions|inventory|meal-calendar|grocery-grouping|recipe-note-[a-z0-9-]+|weekly-grocery-\d{4}-\d{2}-\d{2}|groceries-[a-z0-9-]+-[1-8])$/.test(key);
 }
 
 export function makeBackup(storage) {
@@ -23,6 +24,8 @@ export function parseBackup(text, recipes, storedMeal) {
   const byId = new Map(recipes.map(recipe => [recipe.id,recipe]));
   const valid = (key,value) => {
     if (!backupKey(key)) return false;
+    if (key === favoriteRecipesKey) return Array.isArray(value) && value.every(id => byId.has(id));
+    if (key === "grocery-grouping") return value === "aisle" || value === "cuisine";
     if (key === "week") return entriesMatch(value,(day,id) => /^[0-4]$/.test(day) && byId.get(id)?.day === Number(day));
     if (key === "portions" || key === "sauce-portions") return Number.isInteger(value) && value >= 1 && value <= (key === "portions" ? 8 : 12);
     if (key === "inventory") return isRecord(value) && typeof value.input === "string" && typeof value.assumeStaples === "boolean";
@@ -78,7 +81,7 @@ export function mountKitchenData({read, recipes, storedMeal, icon, copyText, onR
         <button type="button" class="button light" data-copy-all-notes${count ? "" : " disabled"}>${icon("copy",16)} Copy all notes</button>
         <textarea class="transfer-text" rows="5" aria-label="All recipe notes" data-copy-notes-text readonly hidden></textarea><p role="status" data-bulk-copy-status></p>
       </section>
-      <section class="transfer-section"><h3>Backup and restore</h3><p>Save your notes, calendar edits, ingredient list, grocery checks, and settings in a file you can restore in another browser.</p>
+      <section class="transfer-section"><h3>Backup and restore</h3><p>Save your notes, favorites, calendar edits, ingredient list, grocery checks, and settings in a file you can restore in another browser.</p>
         <button class="button light" type="button" data-download-backup>Download backup</button>
         <label class="backup-file">Choose a Mise backup <input type="file" accept=".json,application/json" data-backup-file></label>
         <p role="status" data-backup-status></p><button class="button dark" type="button" data-restore-backup hidden>Restore backup</button>
@@ -105,7 +108,7 @@ export function mountKitchenData({read, recipes, storedMeal, icon, copyText, onR
       if (selectedFile !== file || !dialog.open) return;
       importData = parseBackup(text,recipes,storedMeal);
       dialog.dataset.draft = "true";
-      status.textContent = "Ready to restore. Settings, notes, checklists, and meal slots included in this file take priority over matching items in this browser.";
+      status.textContent = "Ready to restore. Settings, notes, favorites, checklists, and meal slots included in this file take priority over matching items in this browser.";
       restore.hidden = false;
     } catch {
       if (selectedFile === file && dialog.open) status.textContent = "This file is not a valid Mise backup.";
