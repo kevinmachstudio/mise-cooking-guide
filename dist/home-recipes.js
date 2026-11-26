@@ -22,7 +22,7 @@ export const homeRecipes = [
     steps:[
       "Soak the glass noodles and wood ear mushrooms according to their packages. Drain both well. Cut the noodles into short lengths and finely chop the mushrooms.",
       "Mince the shrimp and shallot and grate the carrot. Mix them with the pork, mushrooms, noodles, fish sauce, and pepper. Keep the filling cold while you work.",
-      "Lightly wet a rice paper wrapper and lay it on a clean work surface. When pliable, place one-twelfth of the filling near the edge, fold in the sides, and roll snugly. Repeat, leaving space between the rolls so they do not stick. Blot any surface moisture before frying.",
+      "Divide the filling evenly among the wrappers as you roll. Lightly wet one wrapper and lay it on a clean work surface. When pliable, place a portion near the edge, fold in the sides, and roll snugly. Repeat, leaving space between the rolls so they do not stick. Blot any surface moisture before frying.",
       "Heat about 1 inch of oil in a deep, heavy pan to 325°F / 163°C. Fry a few rolls at a time, leaving space between them. Turn gently and cook until golden and crisp and the filling in the thickest roll reaches 160°F / 71°C. Drain on a wire rack.",
       "Serve with lettuce, mint, and lime fish sauce for dipping."
     ],
