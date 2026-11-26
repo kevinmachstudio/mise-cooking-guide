@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "Mise — Home Cooking Guide",
+  "short_name": "Mise",
+  "description": "Plan your meals, find recipes for ingredients you have, and keep your cooking guide on hand offline.",
+  "start_url": "./#plan",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fcfaf5",
+  "theme_color": "#252c20",
+  "icons": [
+    { "src": "assets/mise-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/mise-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/mise-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

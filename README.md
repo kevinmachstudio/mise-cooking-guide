@@ -8,7 +8,9 @@ A static field guide for home cooking. Plan meals for the week, match recipes to
 python3 -m http.server 8787 --directory dist
 ```
 
-Open [localhost:8787](http://localhost:8787). The site needs no build step. The weekly calendar, submitted ingredient lists, lunch choices, portion counts, and grocery checkmarks are stored in the browser.
+Open [localhost:8787](http://localhost:8787). The weekly calendar, submitted ingredient lists, lunch choices, portion counts, and grocery checkmarks are stored in the browser. After editing files in `dist/`, run `node scripts/build-offline.mjs` to refresh the service worker and its cache version.
+
+Select **Install** in the header for the browser prompt or home-screen instructions. Open the installed app once while online and check **App & offline access** in the footer. Once the guide is ready, the built-in recipes, images, search, planner, and saved kitchen data work offline. External source links require a connection.
 
 Open **My notes** in a recipe to write personal cooking notes. Notes save automatically in that browser. **Copy notes** copies their plain text for pasting elsewhere.
 
@@ -30,7 +32,7 @@ The Nutrition & Longevity guide links to primary studies and public-health guida
 
 ## Deploy
 
-GitHub Pages uses the checked-in Actions workflow and serves `dist/`. In the repository’s Pages settings, choose **GitHub Actions** as the source. Netlify reads `netlify.toml` and publishes the same directory. The production site can be updated with `netlify deploy --prod` once linked.
+GitHub Pages uses the checked-in Actions workflow and serves `dist/`. In the repository’s Pages settings, choose **GitHub Actions** as the source. Netlify reads `netlify.toml` and publishes the same directory. Both builds run `node scripts/build-offline.mjs`. For direct uploads, run that command before uploading `dist/`.
 
 ## Recipe and image sources
 

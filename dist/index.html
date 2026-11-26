@@ -2,16 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#252c20">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Mise">
   <meta name="description" content="Plan meals, find recipes for ingredients you have, and explore pantry staples, quick sauces, fish, and nutrition and longevity research.">
   <title>This Week — Mise</title>
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="apple-touch-icon" href="assets/mise-touch-180.png">
   <link rel="stylesheet" href="styles.css">
   <script type="module" src="app.js"></script>
+  <script type="module" src="pwa.js"></script>
 </head>
 <body>
   <a href="#main" class="skip">Skip to content</a>
@@ -21,7 +23,10 @@
       <nav aria-label="Main navigation">
         <a href="#plan">This Week</a><a href="#restaurants">Recipes</a><a href="#pantry">Pantry</a><a href="#sauces">Sauces</a><a href="#lunches">Lunch plan</a><a href="#meat">Meat guide</a><a href="#nutrition">Nutrition</a>
       </nav>
-      <button class="nav-search" type="button" data-search><span data-icon="search"></span><span>Search</span><kbd>/</kbd></button>
+      <div class="nav-actions">
+        <button class="nav-search" type="button" data-search><span data-icon="search"></span><span>Search</span><kbd>/</kbd></button>
+        <button class="nav-install" type="button" id="install-app" hidden>Install</button>
+      </div>
     </div>
   </header>
   <main id="main" tabindex="-1">
@@ -39,9 +44,22 @@
     </div>
     <div id="view"></div>
   </main>
-  <footer class="footer"><div class="wrap footer-row"><a class="wordmark" href="#plan"><span class="brand-symbol" data-icon="mark"></span>mise<span>.</span></a><a href="#home">Kitchen guide</a><a href="https://www.foodsafety.gov/food-safety-charts/safe-minimum-internal-temperatures">Food safety reference <span data-icon="arrow-up"></span></a></div></footer>
+  <footer class="footer"><div class="wrap footer-row"><a class="wordmark" href="#plan"><span class="brand-symbol" data-icon="mark"></span>mise<span>.</span></a><a href="#home">Kitchen guide</a><button id="app-access" type="button" hidden>App &amp; offline access</button><a href="https://www.foodsafety.gov/food-safety-charts/safe-minimum-internal-temperatures">Food safety reference <span data-icon="arrow-up"></span></a></div></footer>
   <dialog id="search-dialog" aria-labelledby="search-title"><div class="dialog-head"><h2 id="search-title">Search Mise</h2><button class="icon-button" type="button" data-close aria-label="Close search"><span data-icon="x"></span></button></div><label class="search-input"><span data-icon="search"></span><input id="search-input" type="search" autocomplete="off" placeholder="Try miso, stir-fry, or flank steak" aria-label="Search the guide"></label><p class="search-status" id="search-status" aria-live="polite"></p><div id="search-results"></div></dialog>
   <dialog id="recipe-dialog" aria-labelledby="recipe-title"></dialog>
+  <dialog id="app-dialog" class="app-dialog" aria-labelledby="app-dialog-title">
+    <div class="app-dialog-content">
+      <div class="dialog-head"><h2 id="app-dialog-title">Mise on your phone</h2><button class="icon-button" type="button" aria-label="Close app information"><span data-icon="x"></span></button></div>
+      <div class="install-steps">
+        <p><strong>iPhone or iPad</strong><br>Open Mise in Safari. Tap <b>Share</b> → <b>Add to Home Screen</b>. Turn on <b>Open as Web App</b> if shown, then tap <b>Add</b>.</p>
+        <p><strong>Android</strong><br>Open Mise in Chrome. Tap the menu (⋮), then <b>Install and create shortcut</b> → <b>Install</b>. Some versions show <b>Add to home screen</b>.</p>
+      </div>
+      <div class="app-offline">
+        <strong id="offline-status" role="status">Preparing offline access…</strong>
+        <p>Open Mise from its home-screen icon once while online. When it’s ready, you can use the planner and browse the full guide offline.</p>
+      </div>
+    </div>
+  </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

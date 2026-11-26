@@ -1,5 +1,11 @@
 [build]
+  command = "node scripts/build-offline.mjs"
   publish = "dist"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
 
 [[headers]]
   for = "/*"
