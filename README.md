@@ -30,6 +30,8 @@ Weekday calendar slots use the lunch plan until edited. Weekly templates preview
 
 The Nutrition & Longevity guide links to primary studies and public-health guidance. Its hero uses a generated editorial photo of a Japanese-inspired lunch with tofu, greens, sweet potato, and noodles.
 
+In **Nutrition**, open **Food hacks** for seven ingredient prep techniques and **Protein orders** for example takeout builds and per-serving comparisons from published U.S. menus.
+
 ## Deploy
 
 GitHub Pages uses the checked-in Actions workflow and serves `dist/`. In the repository’s Pages settings, choose **GitHub Actions** as the source. Netlify reads `netlify.toml` and publishes the same directory. Both builds run `node scripts/build-offline.mjs`. For direct uploads, run that command before uploading `dist/`.

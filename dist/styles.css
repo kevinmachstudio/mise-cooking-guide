@@ -668,6 +668,17 @@ dialog::backdrop { background:#171e18a8; backdrop-filter:blur(4px); }
 .health-links a { color:#67432d; font-size:14px; font-weight:700; text-decoration:underline; text-underline-offset:2px; }
 .health-links a:hover { color:#9a543e; }
 .health-card .health-links { margin-top:auto; padding-top:6px; }
+.health-card .health-card-tip { padding:8px 10px; border-radius:6px; background:var(--gold); font-size:.875rem; }
+.order-cards { max-width:850px; display:grid; gap:12px; margin-top:14px; }
+.order-card { gap:9px; }
+.order-examples { list-style:none; margin:0; padding:0; display:grid; gap:4px; }
+.order-examples li { display:grid; gap:1px; padding:8px 10px; border-radius:6px; background:var(--sage); }
+.order-examples span { font-size:.875rem; color:#47513f; }
+.order-table { width:100%; border-collapse:collapse; font-size:.875rem; font-variant-numeric:tabular-nums; }
+.order-table th,.order-table td { padding:6px 4px; border-bottom:1px solid var(--line); text-align:right; }
+.order-table th:first-child { text-align:left; }
+.order-table tbody th { font-weight:600; }
+.order-table small { display:block; color:var(--muted); font-weight:400; }
 .health-topic .health-subhead { font-size:clamp(35px,4vw,53px); margin-top:25px; }
 .health-evidence-note { background:#f0ebdc; margin-top:14px; }
 .evidence-timeline { list-style:none; margin:14px 0 0; max-width:920px; padding:0; }

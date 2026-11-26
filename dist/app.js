@@ -281,10 +281,11 @@ function restaurantPage(filter, region) {
     italian:["Italian recipes","Polenta, pasta, and regional Italian dishes."],
     fusion:["Asian fusion","Home adaptations inspired by dishes from the Bay Area and beyond."]
   }[active] ?? ["Recipe library","Browse restaurant favorites, regional classics, and quick lunches."];
+  const orderingGuideLink = active === "chains" ? '<p class="health-links"><a href="#nutrition/protein-orders">High-protein takeout orders</a></p>' : "";
   return sectionIntro("Recipes",title,description,showingFavorites ? "heart" : "bowl") +
     '<section class="wrap page-body"><div class="restaurant-controls"><div class="pills" aria-label="Filter recipes">' +
     filters.map(([id,label]) => '<a href="#restaurants' + (id === "all" ? "" : "/" + id) + '" ' + (active === id ? 'aria-current="page"' : '') + '>' + label + '</a>').join("") +
-    '</div><p' + (showingFavorites ? ' data-favorite-count role="status"' : '') + '>' + recipeCount(visible.length) + '</p></div>' + regionFilters +
+    '</div><p' + (showingFavorites ? ' data-favorite-count role="status"' : '') + '>' + recipeCount(visible.length) + '</p></div>' + regionFilters + orderingGuideLink +
     '<div class="library-grid restaurant-grid"' + (showingFavorites ? ' data-favorite-results' : '') + '>' +
     (showingFavorites ? favoriteCards(visible,favorites) : restaurantCards(visible,favorites)) + '</div></section>';
 }
@@ -621,6 +622,9 @@ function renderRoute(reset = false, requestedFocus = "") {
   if (route === "restaurants" && id === "italian") document.title = "Italian recipes — Mise";
   if (route === "restaurants" && id === "fusion") document.title = "Asian fusion — Mise";
   if (route === "pantry" && id === "groceries") document.title = "Grocery guide — Mise";
+  if (route === "nutrition" && ["food-hacks","protein-orders"].includes(id)) {
+    document.title = nutritionSections.find(item=>item.id === id).label + " — Mise";
+  }
   if (requestedFocus) view.querySelector(requestedFocus)?.focus({preventScroll:true});
   if (restoringRecipe) {
     const recipeLink = view.querySelector('a[href="' + recipeRoute(closedRecipe) + '"]');

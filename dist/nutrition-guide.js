@@ -1,3 +1,5 @@
+import { kitchenHacks, proteinOrders } from "./food-hacks.js";
+
 const sources = {
   who:["WHO healthy diet guidance","https://www.who.int/news-room/fact-sheets/detail/healthy-diet"],
   sodium:["WHO sodium guidance","https://www.who.int/news-room/fact-sheets/detail/sodium-reduction"],
@@ -24,6 +26,8 @@ const sources = {
 
 export const nutritionSections = [
   {id:"basics",label:"Nutrition basics",description:"Practical nutrition and longevity habits",terms:"protein fiber sodium salt nutrition label fats healthy aging seafood whole grains"},
+  {id:"food-hacks",label:"Food hacks",description:"Seven ways to prep ingredients, with studies and recipes",terms:"grated garlic allicin broccoli mustard seed powder sulforaphane sun UV mushrooms vitamin D2 resistant starch chilled rice potatoes ground flaxseed omega ALA lycopene cooked tomatoes olive oil green tea lemon EGCG"},
+  {id:"protein-orders",label:"Protein orders",description:"High-protein fast-food picks with calories and sodium",terms:"fast food takeout panda express california fish grill chipotle grilled teriyaki chicken tilapia quick ordering hacks macros"},
   {id:"research",label:"Research timeline",description:"Nutrition studies from 1997 to 2025",terms:"DASH PREDIMED fiber ultra processed CALERIE clinical trial cohort calorie restriction healthy aging"},
   {id:"blue-zones",label:"Blue Zones & Japan",description:"Okinawa, traditional foods, and longevity research",terms:"blue ocean zone Okinawa Japan Japanese hara hachi bu Sardinia Ikaria Nicoya Loma Linda sweet potato centenarians"},
   {id:"blueprint",label:"Bryan Johnson",description:"Blueprint habits and the evidence behind them",terms:"Bryan Brian Johnson Blueprint life hacks longevity sleep exercise strength tracking"}
@@ -74,7 +78,35 @@ function links(items) {
   return '<div class="health-links">' + items.map(([label,url])=>'<a href="' + url + '">' + label + '</a>').join("") + '</div>';
 }
 function cardGrid(items) {
-  return '<div class="health-cards">' + items.map(item=>'<article class="health-card"><h3>' + item.title + '</h3><p>' + item.text + '</p>' + links(item.links) + '</article>').join("") + '</div>';
+  return '<div class="health-cards">' + items.map(item=>'<article class="health-card"><h3>' + item.title + '</h3><p>' + item.text + '</p>' +
+    (item.extra ? '<p class="health-card-tip">' + item.extra + '</p>' : '') + links(item.links) + '</article>').join("") + '</div>';
+}
+
+function foodHacks() {
+  return '<h2>Kitchen tricks worth trying</h2><p class="health-lead">Small changes to how you slice, cook, and serve everyday ingredients.</p>' + cardGrid(kitchenHacks);
+}
+
+function orderCard({restaurant,tip,items,builds,links:references}) {
+  const format = value => value.toLocaleString("en-US");
+  const rows = Object.values(items).map(([name,portion,protein,calories,sodium]) =>
+    '<tr><th scope="row">' + name + '<small>' + portion + '</small></th><td>' + protein + ' g</td><td>' + format(calories) + '</td><td>' + format(sodium) + '</td></tr>'
+  ).join("");
+  const examples = builds.map(([name,choices]) => {
+    const [protein,calories,sodium] = choices.reduce(([protein,calories,sodium],choice) => {
+      const [, ,itemProtein,itemCalories,itemSodium] = items[choice];
+      return [protein + itemProtein, calories + itemCalories, sodium + itemSodium];
+    },[0,0,0]);
+    return '<li><strong>' + name + '</strong><span>' + protein + ' g protein · ' + format(calories) + ' kcal · ' + format(sodium) + ' mg sodium</span></li>';
+  }).join("");
+  return '<article class="health-card order-card"><h3>' + restaurant + '</h3><p>' + tip + '</p>' +
+    '<ul class="order-examples">' + examples + '</ul><table class="order-table" aria-label="' + restaurant + ' nutrition per listed serving">' +
+    '<thead><tr><th scope="col">Item</th><th scope="col">Protein</th><th scope="col">Calories</th><th scope="col">Sodium (mg)</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+    links(references) + '</article>';
+}
+
+function orderingGuide() {
+  return '<h2>High-protein takeout orders</h2><p class="health-lead">Compare protein, calories, and sodium in U.S. menu portions. Example totals add the listed components. Count any extra sides, dressings, sauces, or drinks separately.</p>' +
+    '<div class="order-cards">' + proteinOrders.map(orderCard).join("") + '</div>';
 }
 
 function research() {
@@ -95,7 +127,7 @@ function blueprint() {
 
 export function nutritionPage(section) {
   const active = nutritionSections.find(item=>item.id === section)?.id ?? "basics";
-  const body = {basics:()=>'<h2>Habits you can use this week</h2>' + cardGrid(basics),research,"blue-zones":blueZones,blueprint};
+  const body = {basics:()=>'<h2>Habits you can use this week</h2>' + cardGrid(basics),"food-hacks":foodHacks,"protein-orders":orderingGuide,research,"blue-zones":blueZones,blueprint};
   return '<section class="health-hero"><div class="wrap health-hero-inner"><div><h1>Nutrition &amp; longevity</h1><p>Research on healthy aging, food traditions from Okinawa and beyond, and habits you can use at home.</p></div><img src="assets/nutrition-guide.webp" alt="Sweet potatoes, greens, tofu, and grains in a Japanese-inspired meal" width="650" height="488"></div></section>' +
     '<section class="wrap page-body health-body"><nav class="pills health-nav" aria-label="Nutrition and longevity topics">' + nutritionSections.map(item=>'<a href="#nutrition' + (item.id === "basics" ? "" : "/" + item.id) + '"' + (item.id === active ? ' aria-current="page"' : '') + '>' + item.label + '</a>').join("") + '</nav><div id="health-topic" class="health-topic">' + body[active]() + '</div></section>';
 }
