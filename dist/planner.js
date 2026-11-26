@@ -196,7 +196,7 @@ export function mountPlanner(root, recipes, {icon, read, write, notice, recipeIn
           const recipe = recipeIndex.get(entry?.id);
           const extra = batchSizes.get(slot) ?? 0;
           if (recipe) count++;
-          return `<div class="calendar-cell" data-drop-slot="${slot}"${recipe ? ' data-drag-meal' : ''}>
+          return `<div class="calendar-cell" data-meal="${meal}" data-drop-slot="${slot}"${recipe ? ' data-drag-meal' : ''}>
             <div class="slot-label"><span>${label}</span>${recipe ? `<button class="slot-remove" data-remove-meal="${slot}" type="button" aria-label="Remove ${recipe.name} from ${slots.get(slot)}">${icon("x",14)}</button>` : ""}</div>
             ${recipe ? `<a class="planned-meal" href="${recipeRoute(recipe)}" draggable="false" data-recipe-portion="${entry.servings+extra}">${recipe.name}</a>${entry.leftoverOf ? '<small class="batch-note" title="From ' + slots.get(entry.leftoverOf) + '">Leftovers · ' + numberLabel(entry.servings) + (entry.servings === 1 ? ' serving' : ' servings') + '</small>' : extra ? '<small class="batch-note">Cook ' + numberLabel(entry.servings+extra) + ' servings</small>' : entry.servings !== 1 ? '<small class="planned-portion">' + numberLabel(entry.servings) + ' servings</small>' : ''}` : ""}
             <div class="slot-actions">${recipe ? `<button class="slot-move" data-move-meal="${slot}" type="button" aria-label="Move ${recipe.name} from ${slots.get(slot)}" title="Drag or choose a destination">${icon("grip",15)} Move</button>` : ""}

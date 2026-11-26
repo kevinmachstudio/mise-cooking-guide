@@ -478,25 +478,28 @@ dialog::backdrop { background:#171e18a8; backdrop-filter:blur(4px); }
 .calendar-day.current-day { background:#f4f4e7; border-color:#a8b391; }
 .calendar-day.current-day h3 { background:#e2ead5; border-color:#d2ddc1; }
 .calendar-day.current-day time { border-radius:50%; background:#34452e; color:#fffdf4; }
-.calendar-cell { position:relative; margin:5px; border:1px solid #e8e2d4; background:var(--white); border-radius:6px; min-height:100px; padding:6px; display:flex; flex-direction:column; gap:4px; transition:background .15s,border-color .15s; }
-.calendar-cell[data-drag-meal] { cursor:grab; user-select:none; -webkit-touch-callout:none; }
+.calendar-cell[data-meal="breakfast"] { --meal-empty:#fbf2e6; --meal-filled:#f7e4ce; --meal-line:#e0c4a4; --meal-accent:#b27743; --meal-ink:#724321; }
+.calendar-cell[data-meal="lunch"] { --meal-empty:#eff3e8; --meal-filled:#e3edd8; --meal-line:#c6d5b9; --meal-accent:#778e61; --meal-ink:#405637; }
+.calendar-cell[data-meal="dinner"] { --meal-empty:#f3edf6; --meal-filled:#ebe1f0; --meal-line:#d6c6dd; --meal-accent:#92739f; --meal-ink:#67476f; }
+.calendar-cell { position:relative; margin:5px; border:1px solid var(--meal-line); border-inline-start:3px solid var(--meal-accent); background:var(--meal-empty); border-radius:6px; min-height:100px; padding:6px; display:flex; flex-direction:column; gap:4px; transition:background .15s,border-color .15s; }
+.calendar-cell[data-drag-meal] { background:var(--meal-filled); cursor:grab; user-select:none; -webkit-touch-callout:none; }
 .calendar-grid.dragging .calendar-cell { border-style:dashed; border-color:#a5ad94; }
 .planner-layout.dragging,.calendar-grid.dragging [data-drag-meal],.calendar-grid.dragging .slot-move { cursor:grabbing; }
 .calendar-grid .calendar-cell.drag-source { opacity:.55; }
-.calendar-grid .calendar-cell.drop-target { background:#e3ebd5; border-color:#5e7952; outline:2px solid #5e7952; outline-offset:-1px; }
+.calendar-grid .calendar-cell.drop-target { background:var(--meal-filled); border-color:#34452e; outline:2px solid #34452e; outline-offset:-1px; }
 .calendar-cell.drop-target::after { content:attr(data-drop-action); position:absolute; inset:auto 3px 3px; padding:3px; border-radius:4px; background:#34452e; color:var(--white); font-size:.75rem; font-weight:700; text-align:center; pointer-events:none; }
 .calendar-drag-label { position:fixed; top:0; left:0; z-index:10; max-width:min(190px,43vw); padding:6px 9px; border-radius:6px; background:#34452e; color:var(--white); box-shadow:0 3px 11px #21291e40; pointer-events:none; font-size:.875rem; }
-.slot-label { display:flex; justify-content:space-between; gap:2px; align-items:center; color:#585d4e; font-size:12px; font-weight:700; min-height:20px; }
+.slot-label { display:flex; justify-content:space-between; gap:2px; align-items:center; color:var(--meal-ink); font-size:12px; font-weight:700; min-height:20px; }
 .slot-remove { padding:1px; display:grid; place-items:center; border:0; border-radius:4px; background:transparent; color:#85503d; }
 .slot-remove:hover { background:#f0ded4; }
-.slot-picker { border:1px dashed #cdd3c1; background:#f6f7ee; border-radius:5px; color:#485940; font-size:13px; min-height:32px; width:100%; margin-top:auto; padding:4px 2px; }
-.slot-picker:hover { background:#e8ecdc; border-color:#7f9471; }
-.slot-picker.occupied { background:transparent; color:#52594b; border-color:transparent; min-height:26px; text-align:left; }
-.slot-picker.occupied:hover { background:#edf0e3; text-decoration:underline; }
+.slot-picker { border:1px dashed var(--meal-accent); background:var(--meal-empty); border-radius:5px; color:var(--meal-ink); font-size:13px; min-height:32px; width:100%; margin-top:auto; padding:4px 2px; }
+.slot-picker:hover { background:var(--meal-filled); }
+.slot-picker.occupied { background:transparent; border-color:transparent; min-height:26px; text-align:left; }
+.slot-picker.occupied:hover { background:var(--meal-empty); text-decoration:underline; }
 .slot-actions { display:flex; flex-wrap:wrap; gap:3px; align-items:center; margin-top:auto; }
 .slot-actions .slot-picker.occupied,.slot-move { width:auto; margin:0; padding:2px 3px; min-height:28px; line-height:1; font-size:.75rem; }
-.slot-move { display:inline-flex; align-items:center; justify-content:center; gap:1px; background:#eef2e4; color:#3d5135; border:1px solid #d9e0cc; border-radius:5px; font-weight:700; cursor:grab; touch-action:none; user-select:none; }
-.slot-move:hover { background:#dfe8d2; border-color:#a0b18d; }
+.slot-move { display:inline-flex; align-items:center; justify-content:center; gap:1px; background:var(--meal-empty); color:var(--meal-ink); border:1px solid var(--meal-line); border-radius:5px; font-weight:700; cursor:grab; touch-action:none; user-select:none; }
+.slot-move:hover { border-color:var(--meal-accent); }
 .slot-move:active { cursor:grabbing; }
 .planned-meal { display:block; font-size:13px; line-height:1.24; font-weight:700; border-radius:4px; overflow-wrap:anywhere; cursor:grab; }
 .planned-meal:hover { color:#894e34; text-decoration:underline; }
