@@ -11,6 +11,7 @@ import { favoriteRecipesKey, mountKitchenData, recipeNoteKey } from "./kitchen-d
 import { recipeVersion } from "./recipe-versions.js";
 import { groceryGuide, groceryGuidePage, mountGroceryGuide } from "./grocery-guide.js";
 import { italianRecipes } from "./italian-fusion.js";
+import { homeRecipes } from "./home-recipes.js";
 
 const shapes = {
   mark:'<path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
@@ -54,7 +55,7 @@ const write = (key, value) => {
   try { localStorage.setItem("mise-" + key, JSON.stringify(value)); return true; } catch { return false; }
 };
 const byId = (items, id) => items.find(item => item.id === id);
-const allRecipes = [...restaurantRecipes, ...regionalRecipes, ...italianRecipes, ...recipes, ...templateRecipes];
+const allRecipes = [...restaurantRecipes, ...regionalRecipes, ...italianRecipes, ...homeRecipes, ...recipes, ...templateRecipes];
 const favoriteIds = () => new Set(read(favoriteRecipesKey, []));
 const recipeContext = recipe => restaurants[recipe.restaurant]?.name ?? recipe.origin ?? (recipe.template ? "Weekly templates" : "Lunch plan");
 const pantryIndex = pantry.flatMap(p => p.staples.map(([name,desc,swap],index) => ({
@@ -489,7 +490,7 @@ const entries = [
   ...templateRecipes.map(r => ({title:r.name,kind:"Recipe",link:recipeRoute(r),desc:"Weekly templates · " + Math.round(r.nutrition[0]) + " g protein",terms:[r.cuisine,r.animal,...r.items.map(([, ,label])=>label)].join(" ")})),
   ...restaurantRecipes.map(r => ({title:r.name, kind:"Recipe", link:recipeRoute(r), desc:restaurants[r.restaurant].name + " · " + restaurants[r.restaurant].place + " · " + duration(r.time), terms:[r.inspiration,r.cuisine,r.animal,r.dimSum ? "dim sum yum cha" : "",r.collection === "fusion" ? "asian fusion" : "",...recipeIngredients(r).map(([, ,label]) => label)].join(" ")})),
   ...regionalRecipes.map(r => ({title:r.name, kind:"Recipe", link:recipeRoute(r), desc:r.origin + " · " + duration(r.time), terms:[r.inspiration,r.cuisine,r.animal,"regional Chinese",chineseRegions[r.region],r.dimSum ? "dim sum yum cha" : "",...recipeIngredients(r).map(([, ,label]) => label)].join(" ")})),
-  ...italianRecipes.map(r => ({title:r.name,kind:"Recipe",link:recipeRoute(r),desc:r.origin + " · " + duration(r.time),terms:[r.desc,r.cuisine,r.animal,...r.items.map(([, ,label]) => label)].join(" ")})),
+  ...[...italianRecipes,...homeRecipes].map(r => ({title:r.name,kind:"Recipe",link:recipeRoute(r),desc:r.origin + " · " + duration(r.time),terms:[r.desc,r.cuisine,r.animal,...r.items.map(([, ,label]) => label)].join(" ")})),
   ...sauces.map(s => ({title:s.name, kind:"Sauce", link:"#sauces/" + s.id, desc:s.cuisine + " · " + sauceUses[s.use] + " · " + s.time + " min", terms:s.items.map(([name]) => name).join(" ") + " " + s.use})),
   ...pantryIndex.map(({name,desc,swap,cuisine,link}) => ({title:name,kind:"Pantry",link,desc:cuisine + " pantry · " + desc,terms:swap})),
   ...groceryGuide.map(item => ({title:item.name,kind:"Grocery",link:"#pantry/groceries/" + normalizeText(item.name).replaceAll(" ","-"),desc:item.category + " · " + item.tip,terms:item.aliases.join(" ")})),

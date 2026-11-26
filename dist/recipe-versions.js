@@ -5,6 +5,25 @@ const ground = "160°F / 71°C";
 
 // Each pair is restaurant-style, then fitness. Quantities are for the original recipe's yield.
 export const recipeVersions = {
+  "sesame-soy-spaghetti": [
+    version(25,"Roasted sesame paste, black vinegar, and a chile-crisp finish.",{"rice vinegar":[2,"tbsp","Chinese black vinegar"],"sugar":2},{
+      1:"Whisk soy sauce, black vinegar, sugar, and grated garlic with the sesame paste. Whisk in the sesame oil and enough warm pasta water to make a pourable dressing.",
+      2:"Toss the spaghetti with the dressing. Finish with cucumber sticks, scallions, toasted sesame seeds, and chile crisp."
+    },[[2,"tbsp","Chinese sesame paste"],[2,"tsp","Chile crisp"]]),
+    version(25,"Less spaghetti and extra edamame and cucumber for a higher-protein bowl.",{"dry spaghetti":130,"soy sauce":[1.5,"tbsp","Reduced-sodium soy sauce"],"toasted sesame oil":.5,"sugar":[1,"tsp","Sugar"],"cucumber":180},{
+      2:"Cook the edamame as directed on the bag and drain it. Toss it with the spaghetti, dressing, cucumber sticks, and a splash of pasta water. Top with sliced scallions and sesame seeds."
+    },[[200,"g","Frozen shelled edamame"]])
+  ],
+  "vietnamese-egg-rolls": [
+    version(75,"Double-fried rice-paper rolls with extra shrimp and a shattery crust.",{"ground pork":180,"raw shrimp":175},{
+      3:`Heat about 1 inch of oil in a deep, heavy pan to 325°F / 163°C. Fry in uncrowded batches until light golden and the center reaches ${ground}. Rest on a wire rack. Raise the oil to 350°F / 177°C and fry briefly in batches until deeper gold and crisp. Drain on the rack.`
+    }),
+    version(60,"Oven-crisped wheat wrappers with lean ground turkey and shrimp.",{"rice paper":[12,"","Wheat egg-roll wrappers"],"ground pork":[220,"g","Lean ground turkey"],"neutral oil":[1,"tbsp","Neutral oil"]},{
+      1:"Mince the shrimp and shallot and grate the carrot. Mix with the turkey, mushrooms, noodles, fish sauce, and pepper. Keep the filling cold while you work.",
+      2:"Heat the oven to 425°F / 220°C. Divide the filling among the wheat wrappers. Fold the sides over, roll snugly, and seal the tip with a little water.",
+      3:`Brush the rolls lightly with the oil and space them on a lined baking sheet. Bake until golden, turning halfway through, about 18–24 minutes. Check that the center of the thickest roll reaches ${chicken}.`
+    })
+  ],
   "teriyaki-chicken": [
     version(30,"A harder sear and a double brush of glossy teriyaki.",{"soy":3,"mirin":3,"sake":3,"sugar":2,"neutral":2},{
       2:"Transfer the cooked chicken to a plate. Reduce the glaze in the skillet until it leaves a trail when stirred, then return the chicken and turn it twice in the glaze. Slice thickly and spoon the remaining glaze over the rice."
